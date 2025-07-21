@@ -19,11 +19,6 @@
 - 新成员加入欢迎
 - `hitokoto` - 获取一言
 
-### 🤖 OpenAI 集成
-- `ask <message>` - 询问 AI
-- `chat <message>` - AI 对话（支持上下文）
-- `chat reset` - 重置对话上下文
-- 支持 @ 机器人进行对话
 
 ### 📺 Bilibili 直播监控
 - 监控指定 B站直播间开播状态
@@ -34,10 +29,6 @@
 - 支持 GitHub 事件推送通知
 - 监控 Push、Issue、Pull Request 事件
 - `github.test` - 测试 GitHub 通知功能
-
-### 🏥 健康检查
-- `health` - 查看系统健康状态
-- 监控内存使用、运行时间等信息
 
 ## 安装
 
@@ -65,12 +56,6 @@ plugins:
       watchChannels: ["channel-id-1", "channel-id-2"]
       enableGreeting: true
     
-    # OpenAI 配置
-    openai:
-      apiKey: "your-openai-api-key"
-      model: "gpt-3.5-turbo"
-      temperature: 0.6
-    
     # Bilibili 配置
     bilibili:
       enabled: true
@@ -86,11 +71,6 @@ plugins:
       webhookPort: 3000
       watchChannels: ["channel-id"]
     
-    # 健康检查配置
-    healthCheck:
-      enabled: true
-      interval: 300000
-    
     # 错误通知配置
     errorNotify:
       enabled: true
@@ -104,10 +84,6 @@ plugins:
 - `watchChannels`: 监听的频道ID列表
 - `enableGreeting`: 是否启用自动问候功能
 
-### OpenAI 配置
-- `apiKey`: OpenAI API 密钥（必需）
-- `model`: 使用的模型，默认为 `gpt-3.5-turbo`
-- `temperature`: 温度参数，控制回复的随机性
 
 ### Bilibili 配置
 - `enabled`: 是否启用 Bilibili 监控
@@ -132,18 +108,9 @@ tool.base64 -d SGVsbG8gV29ybGQ=
 tool.md5 Hello World
 ```
 
-### AI 对话
-```
-ask 什么是人工智能？
-chat 你好
-chat 继续之前的话题
-chat reset
-```
-
 ### 其他命令
 ```
 hitokoto
-health
 bili.status
 github.test
 ```

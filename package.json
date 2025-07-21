@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-imx",
   "description": "Mix-Space Bot for Koishi - 集成多种功能的聊天机器人插件",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -27,7 +27,6 @@
     "plugin",
     "imx",
     "mx-space",
-    "openai",
     "bilibili",
     "github"
   ],
@@ -36,8 +35,8 @@
   },
   "koishi": {
     "description": {                 
-      "en": "A versatile chatbot plugin for Koishi, integrating multiple functionalities including OpenAI, Bilibili, and GitHub.",
-      "zh": "一个多功能的聊天机器人插件，集成了 OpenAI、Bilibili 和 GitHub 等多种功能。"
+      "en": "A versatile chatbot plugin for Koishi, integrating multiple functionalities including Bilibili and GitHub.",
+      "zh": "一个多功能的聊天机器人插件，集成了 Bilibili 和 GitHub 等多种功能。"
     },
     "service": {
       "required": ["http"]
@@ -48,7 +47,6 @@
     "axios": "^1.6.0",
     "dayjs": "^1.11.9",
     "socket.io-client": "^4.7.1",
-    "openai": "^4.0.0",
     "randomcolor": "^0.6.2",
     "remove-markdown": "^0.6.0"
   },

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2025-07-21
+
+### Removed
+- **BREAKING**: 移除 OpenAI 集成功能
+  - 删除 `ask` 命令
+  - 删除 `chat` 命令
+  - 删除 @ 机器人自动回复功能
+  - 删除 OpenAI 相关配置选项
+- **BREAKING**: 移除健康检查功能
+  - 删除 `health` 命令
+  - 删除健康检查模块和配置
+- 从依赖中移除 `openai` 包
+
+### Changed
+- 更新插件描述，移除对 OpenAI 功能的引用
+- 更新 README.md，移除相关功能说明
+- 更新 package.json 关键词列表
+
 ## [1.0.3] - 2025-07-21
 
 ### Fixed
@@ -43,6 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `chat` 命令 - 带上下文的 AI 对话
   - @ 机器人自动回复功能
   - 对话上下文管理
+- **OpenAI 集成**:
+  - `ask` 命令 - 单次 AI 询问
+  - `chat` 命令 - 带上下文的 AI 对话
+  - @ 机器人自动回复功能
+  - 对话上下文管理
 - **Bilibili 直播监控**:
   - 自动监控指定直播间开播状态
   - 开播时自动推送通知
@@ -51,6 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 支持 Push、Issue、Pull Request 事件通知
   - 自动过滤机器人提交
   - `github.test` 测试通知功能
+- **健康检查模块**:
+  - `health` 命令查看系统状态
+  - 监控内存使用、运行时间等信息
+  - 可扩展的健康检查框架
 - **健康检查模块**:
   - `health` 命令查看系统状态
   - 监控内存使用、运行时间等信息
