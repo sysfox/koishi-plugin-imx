@@ -1,0 +1,89 @@
+name: Release and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 匹配 v1.0.0, v2.1.3 等版本标签
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Run tests (if available)
+        run: npm test --if-present
+        
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        
+      - name: Update package.json version
+        run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
+        
+      - name: Extract Release Notes
+        id: release-notes
+        run: |
+          # 检查 Node.js 可用性
+          node --version
+          
+          # 确保脚本有执行权限
+          chmod +x scripts/extract-release-notes.js
+          
+          # 提取 changelog 内容
+          release_body=$(node scripts/extract-release-notes.js ${{ steps.version.outputs.VERSION }})
+          
+          # 保存到环境变量，处理多行内容
+          echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
+          echo "$release_body" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          
+          # 调试输出
+          echo "Generated release notes for version ${{ steps.version.outputs.VERSION }}"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          release_name: Release v${{ steps.version.outputs.VERSION }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+            
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+      - name: Create build archive
+        run: |
+          cd lib
+          zip -r ../build-${{ steps.version.outputs.VERSION }}.zip .
+          cd ..
+          
+      - name: Upload build artifacts
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build-${{ steps.version.outputs.VERSION }}.zip
+          asset_name: build-${{ steps.version.outputs.VERSION }}.zip
+          asset_content_type: application/zip
