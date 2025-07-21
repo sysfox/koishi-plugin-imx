@@ -39,7 +39,9 @@
       "zh": "一个多功能的聊天机器人插件，集成了 Bilibili 和 GitHub 等多种功能。"
     },
     "service": {
-      "required": ["http"]
+      "required": [
+        "http"
+      ]
     }
   },
   "dependencies": {
@@ -48,7 +50,8 @@
     "dayjs": "^1.11.9",
     "socket.io-client": "^4.7.1",
     "randomcolor": "^0.6.2",
-    "remove-markdown": "^0.6.0"
+    "remove-markdown": "^0.6.0",
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
