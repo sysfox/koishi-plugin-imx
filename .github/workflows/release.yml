@@ -41,9 +41,6 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
         
-      - name: Update package.json version
-        run: pnpm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
-        
       - name: Extract Release Notes
         id: release-notes
         run: |
