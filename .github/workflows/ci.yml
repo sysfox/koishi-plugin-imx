@@ -12,7 +12,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [16, 18, 20]
+        node-version: [20, 22]
         
     steps:
       - name: Checkout code
@@ -22,25 +22,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Run TypeScript compilation check
-        run: npx tsc --noEmit
+        run: pnpm exec tsc --noEmit
         
       - name: Build project
-        run: npm run build
+        run: pnpm run build
         
       - name: Run tests
-        run: npm test --if-present
+        run: pnpm test --if-present
         
       - name: Run security audit
-        run: npm audit --audit-level=high
+        run: pnpm audit --audit-level=high
         
       - name: Check for outdated dependencies
-        run: npm outdated || true
+        run: pnpm outdated || true
 
   lint:
     runs-on: ubuntu-latest
@@ -52,18 +57,23 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Run ESLint (if configured)
-        run: npx eslint . --ext .ts,.js --max-warnings 0 || echo "ESLint not configured, skipping..."
+        run: pnpm exec eslint . --ext .ts,.js --max-warnings 0 || echo "ESLint not configured, skipping..."
         continue-on-error: true
         
       - name: Check code formatting (if Prettier is configured)
-        run: npx prettier --check . || echo "Prettier not configured, skipping..."
+        run: pnpm exec prettier --check . || echo "Prettier not configured, skipping..."
         continue-on-error: true
 
   coverage:
@@ -76,17 +86,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
           
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         
       - name: Build project
-        run: npm run build
+        run: pnpm run build
         
       - name: Generate coverage report
-        run: npm run coverage --if-present || echo "Coverage script not available"
+        run: pnpm run coverage --if-present || echo "Coverage script not available"
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
