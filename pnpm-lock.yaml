@@ -28,8 +28,8 @@ importers:
         version: 4.8.1
     devDependencies:
       '@types/node':
-        specifier: ^18.0.0
-        version: 18.19.120
+        specifier: ^22.0.0
+        version: 22.16.5
       '@types/randomcolor':
         specifier: ^0.5.7
         version: 0.5.9
@@ -193,8 +193,8 @@ packages:
   '@types/mime@1.3.5':
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
 
-  '@types/node@18.19.120':
-    resolution: {integrity: sha512-WtCGHFXnVI8WHLxDAt5TbnCM4eSE+nI0QN2NJtwzcgMhht2eNz6V9evJrk+lwC8bCY8OWV5Ym8Jz7ZEyGnKnMA==}
+  '@types/node@22.16.5':
+    resolution: {integrity: sha512-bJFoMATwIGaxxx8VJPeM8TonI8t579oRvgAuT8zFugJsJZgzqv0Fu8Mhp68iecjzG7cnN3mO2dJQ5uUM2EFrgQ==}
 
   '@types/qs@6.14.0':
     resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
@@ -727,8 +727,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@5.26.5:
-    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   undici@6.21.3:
     resolution: {integrity: sha512-gBLkYIlEnSp8pFbT64yFgGE6UIB9tAkhukC23PmMDCe5Nd+cRqKxSjw5y54MK2AZMgZfJWMaNE4nYUHgi1XEOw==}
@@ -957,21 +957,21 @@ snapshots:
 
   '@types/accepts@1.3.7':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/co-body@6.1.3':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
       '@types/qs': 6.14.0
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/content-disposition@0.5.9': {}
 
@@ -980,11 +980,11 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/express': 5.0.3
       '@types/keygrip': 1.0.6
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/express-serve-static-core@5.0.7':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.5
@@ -997,7 +997,7 @@ snapshots:
 
   '@types/formidable@2.0.6':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/http-assert@1.5.6': {}
 
@@ -1018,7 +1018,7 @@ snapshots:
       '@types/http-errors': 2.0.5
       '@types/keygrip': 1.0.6
       '@types/koa-compose': 3.2.8
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/koa__router@12.0.4':
     dependencies:
@@ -1026,9 +1026,9 @@ snapshots:
 
   '@types/mime@1.3.5': {}
 
-  '@types/node@18.19.120':
+  '@types/node@22.16.5':
     dependencies:
-      undici-types: 5.26.5
+      undici-types: 6.21.0
 
   '@types/qs@6.14.0': {}
 
@@ -1039,17 +1039,17 @@ snapshots:
   '@types/send@0.17.5':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   '@types/serve-static@1.15.8':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
       '@types/send': 0.17.5
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 18.19.120
+      '@types/node': 22.16.5
 
   abort-controller@3.0.0:
     dependencies:
@@ -1610,7 +1610,7 @@ snapshots:
 
   typescript@5.8.3: {}
 
-  undici-types@5.26.5: {}
+  undici-types@6.21.0: {}
 
   undici@6.21.3: {}
 
