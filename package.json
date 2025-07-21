@@ -1,0 +1,40 @@
+{
+  "name": "koishi-plugin-imx",
+  "description": "Mix-Space Bot for Koishi",
+  "version": "1.0.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
+  },
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin",
+    "imx"
+  ],
+  "peerDependencies": {
+    "koishi": "^4.15.0"
+  },
+  "dependencies": {
+    "@mx-space/api-client": "^1.4.3",
+    "axios": "^1.4.0",
+    "dayjs": "^1.11.9",
+    "socket.io-client": "^4.7.1",
+    "openai": "^3.3.0",
+    "randomcolor": "^0.6.2",
+    "remove-markdown": "^0.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/randomcolor": "^0.5.7",
+    "koishi": "^4.15.0",
+    "typescript": "^5.0.0"
+  }
+}
