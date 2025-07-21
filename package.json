@@ -23,18 +23,18 @@
     "koishi": "^4.15.0"
   },
   "dependencies": {
-    "@mx-space/api-client": "^1.4.3",
-    "axios": "^1.4.0",
-    "dayjs": "^1.11.9",
-    "socket.io-client": "^4.7.1",
+    "@mx-space/api-client": "^1.17.0",
+    "axios": "^1.10.0",
+    "dayjs": "^1.11.13",
     "openai": "^3.3.0",
     "randomcolor": "^0.6.2",
-    "remove-markdown": "^0.5.0"
+    "remove-markdown": "^0.5.5",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
-    "@types/randomcolor": "^0.5.7",
-    "koishi": "^4.15.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^18.19.120",
+    "@types/randomcolor": "^0.5.9",
+    "koishi": "^4.18.8",
+    "typescript": "^5.8.3"
   }
 }
