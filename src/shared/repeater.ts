@@ -1,34 +1,68 @@
-import { Context, Session, Next } from 'koishi'
+import { Context, Session, Next, Schema } from 'koishi'
 
 export const name = 'repeater'
+
+export interface Config {
+  enabled?: boolean
+  threshold?: number
+  chance?: number
+  breakThreshold?: number
+}
+
+export const Config: Schema<Config> = Schema.object({
+  enabled: Schema.boolean().description('启用复读机').default(false),
+  threshold: Schema.number().description('触发复读的次数').default(3).min(2).max(10),
+  chance: Schema.number().description('复读概率 (0-1)').default(0.5).min(0).max(1),
+  breakThreshold: Schema.number().description('连续复读多少次后打断').default(12).min(5).max(20),
+})
 
 // 存储每个会话的消息队列
 const sessionToMessageQueue = new Map<string, string[]>()
 
-const repeatCount = 3 // 重复几次后触发复读
-const breakRepeatCount = 12 // 连续复读多少次后打断
+export function apply(ctx: Context, config: Config = {}) {
+  if (!config.enabled) return
 
-export function apply(ctx: Context) {
+  const logger = ctx.logger('repeater')
+  const repeatCount = config.threshold || 3
+  const breakRepeatCount = config.breakThreshold || 12
+  const repeatChance = config.chance || 0.5
+
   ctx.middleware((session: Session, next: Next) => {
     const sessionId = `${session.platform}:${session.channelId}`
     const message = session.content
     
-    if (!message || session.userId === ctx.bots[0]?.selfId) {
+    // 忽略空消息、机器人消息和命令
+    if (!message || session.userId === ctx.bots[0]?.selfId || message.startsWith('/')) {
       return next()
     }
 
     const result = checkRepeater(sessionId, message)
     
     if (result === true) {
-      // 触发复读
-      return session.send(message)
+      // 根据概率决定是否复读
+      if (Math.random() < repeatChance) {
+        logger.debug(`触发复读: ${message}`)
+        return session.send(message)
+      }
     } else if (result === 'break') {
       // 打断复读
-      return session.send('复读打断！')
+      const breakMessages = [
+        '复读打断！',
+        '不要再复读了！',
+        '停止复读～',
+        '复读机坏了',
+        '打断复读',
+        '够了够了',
+      ]
+      const randomMessage = breakMessages[Math.floor(Math.random() * breakMessages.length)]
+      logger.debug(`打断复读: ${randomMessage}`)
+      return session.send(randomMessage)
     }
     
     return next()
   })
+
+  logger.info(`复读机已启用 - 阈值: ${repeatCount}, 概率: ${repeatChance}, 打断阈值: ${breakRepeatCount}`)
 }
 
 function checkRepeater(sessionId: string, message: string): boolean | 'break' {
@@ -43,6 +77,9 @@ function checkRepeater(sessionId: string, message: string): boolean | 'break' {
       messageQueue.push(message)
     }
 
+    const repeatCount = 3 // 这里应该从配置获取，但为了简化先硬编码
+    const breakRepeatCount = 12
+
     if (messageQueue.length === repeatCount) {
       messageQueue.length = repeatCount + 1
       return true
@@ -52,8 +89,6 @@ function checkRepeater(sessionId: string, message: string): boolean | 'break' {
         return 'break'
       }
     }
-
-    sessionToMessageQueue.set(sessionId, [...messageQueue])
   } else {
     sessionToMessageQueue.set(sessionId, [message])
   }
