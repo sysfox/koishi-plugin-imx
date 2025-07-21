@@ -9,16 +9,16 @@ importers:
   .:
     dependencies:
       '@mx-space/api-client':
-        specifier: ^1.16.1
+        specifier: ^1.17.0
         version: 1.17.0
       '@mx-space/webhook':
         specifier: ^0.5.0
         version: 0.5.0
       '@tanstack/query-core':
-        specifier: ^4.36.1
+        specifier: ^4.40.0
         version: 4.40.0
       axios:
-        specifier: ^1.8.2
+        specifier: ^1.10.0
         version: 1.10.0
       chalk:
         specifier: ^4.1.2
@@ -48,26 +48,26 @@ importers:
         specifier: ^4.8.1
         version: 4.8.1
       zod:
-        specifier: ^3.22.4
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@types/lodash':
         specifier: ^4.17.20
         version: 4.17.20
       '@types/node':
-        specifier: ^22.0.0
+        specifier: ^22.16.5
         version: 22.16.5
       '@types/randomcolor':
-        specifier: ^0.5.7
+        specifier: ^0.5.9
         version: 0.5.9
       '@types/remove-markdown':
-        specifier: ^0.3.1
+        specifier: ^0.3.4
         version: 0.3.4
       koishi:
-        specifier: ^4.15.0
+        specifier: ^4.18.8
         version: 4.18.8(@cordisjs/plugin-http@0.6.3(cordis@3.18.1))(cordis@3.18.1)
       typescript:
-        specifier: ^5.0.0
+        specifier: ^5.8.3
         version: 5.8.3
 
 packages:
