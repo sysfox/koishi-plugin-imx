@@ -2,8 +2,8 @@
  * 转义 Markdown 特殊字符
  */
 export function escapeMarkdown(text: string): string {
-  // Escape markdown special characters for MarkdownV2
-  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')
+  // Escape backslashes first, then markdown special characters for MarkdownV2
+  return text.replace(/\\/g, '\\\\').replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')
 }
 
 /**
