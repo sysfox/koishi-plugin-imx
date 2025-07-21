@@ -34,6 +34,15 @@
   "peerDependencies": {
     "koishi": "^4.15.0"
   },
+  "koishi": {
+    "description": {                 
+      "en": "A versatile chatbot plugin for Koishi, integrating multiple functionalities including OpenAI, Bilibili, and GitHub.",
+      "zh": "一个多功能的聊天机器人插件，集成了 OpenAI、Bilibili 和 GitHub 等多种功能。"
+    },
+    "service": {
+      "required": ["http"]
+    }
+  },
   "dependencies": {
     "@mx-space/api-client": "^1.4.3",
     "axios": "^1.6.0",
