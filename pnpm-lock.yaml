@@ -17,6 +17,9 @@ importers:
       dayjs:
         specifier: ^1.11.9
         version: 1.11.13
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       randomcolor:
         specifier: ^0.6.2
         version: 0.6.2
@@ -531,6 +534,9 @@ packages:
   koishi@4.18.8:
     resolution: {integrity: sha512-+bTUCy9bktd1NfHhx+D4k7K65ZTg0XjnJXkdsxBxpM5/VbX+ZPPKhV79G9AO58VmMGbFd0rewWPaaH05Zx/HAg==}
     hasBin: true
+
+  lodash@4.17.21:
+    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
 
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
@@ -1415,6 +1421,8 @@ snapshots:
       - cordis
       - supports-color
       - utf-8-validate
+
+  lodash@4.17.21: {}
 
   math-intrinsics@1.1.0: {}
 
