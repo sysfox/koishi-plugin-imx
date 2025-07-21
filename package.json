@@ -34,7 +34,7 @@
     "koishi": "^4.15.0"
   },
   "koishi": {
-    "description": {                 
+    "description": {
       "en": "A versatile chatbot plugin for Koishi, integrating multiple functionalities including Bilibili and GitHub.",
       "zh": "一个多功能的聊天机器人插件，集成了 Bilibili 和 GitHub 等多种功能。"
     },
@@ -49,20 +49,22 @@
     "@mx-space/webhook": "^0.5.0",
     "@tanstack/query-core": "^4.36.1",
     "axios": "^1.8.2",
+    "chalk": "^4.1.2",
+    "consola": "^2.15.3",
+    "cron": "^2.4.4",
     "dayjs": "^1.11.13",
-    "socket.io-client": "^4.8.1",
+    "lodash": "^4.17.21",
+    "marked": "^5.1.2",
     "randomcolor": "^0.6.2",
     "remove-markdown": "^0.5.5",
-    "lodash": "^4.17.21",
-    "cron": "^2.4.4",
-    "chalk": "^4.1.2",
-    "marked": "^5.1.2",
-    "consola": "^2.15.3",
+    "socket.io-client": "^4.8.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.20",
     "@types/node": "^22.0.0",
     "@types/randomcolor": "^0.5.7",
+    "@types/remove-markdown": "^0.3.1",
     "koishi": "^4.15.0",
     "typescript": "^5.0.0"
   }
