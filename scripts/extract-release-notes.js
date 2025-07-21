@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const _ = require('lodash');
 
 /**
  * 从 CHANGELOG.md 中提取指定版本的更新内容
@@ -19,7 +20,8 @@ function extractReleaseNotes(version) {
   const content = fs.readFileSync(changelogPath, 'utf8');
   
   // 查找指定版本的内容
-  const versionRegex = new RegExp(`## \\[${version}\\]([\\s\\S]*?)(?=## \\[|$)`, 'i');
+  const safeVersion = _.escapeRegExp(version);
+  const versionRegex = new RegExp(`## \\[${safeVersion}\\]([\\s\\S]*?)(?=## \\[|$)`, 'i');
   const match = content.match(versionRegex);
   
   if (!match) {
