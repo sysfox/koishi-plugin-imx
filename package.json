@@ -1,14 +1,22 @@
 {
   "name": "koishi-plugin-imx",
-  "description": "Mix-Space Bot for Koishi",
+  "description": "Mix-Space Bot for Koishi - 集成多种功能的聊天机器人插件",
   "version": "1.0.3",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
-    "lib",
-    "dist"
+    "lib"
   ],
   "license": "MIT",
+  "author": "sysfox",
+  "homepage": "https://github.com/sysfox/koishi-plugin-imx",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sysfox/koishi-plugin-imx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sysfox/koishi-plugin-imx/issues"
+  },
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch"
@@ -17,7 +25,11 @@
     "chatbot",
     "koishi",
     "plugin",
-    "imx"
+    "imx",
+    "mx-space",
+    "openai",
+    "bilibili",
+    "github"
   ],
   "peerDependencies": {
     "koishi": "^4.15.0"
