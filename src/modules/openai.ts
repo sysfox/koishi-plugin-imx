@@ -1,5 +1,5 @@
 import { Context, Schema } from 'koishi'
-import { Configuration, OpenAIApi } from 'openai'
+import OpenAI from 'openai'
 
 export const name = 'openai'
 
@@ -10,7 +10,7 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
-  apiKey: Schema.string().description('OpenAI API Key').role('secret'),
+  apiKey: Schema.string().description('OpenAI API Key').role('secret').required(),
   model: Schema.string().default('gpt-3.5-turbo').description('使用的模型'),
   temperature: Schema.number().min(0).max(2).default(0.6).description('温度参数'),
 })
@@ -23,13 +23,12 @@ export function apply(ctx: Context, config: Config) {
     return
   }
 
-  const configuration = new Configuration({
+  const openai = new OpenAI({
     apiKey: config.apiKey,
   })
-  const openai = new OpenAIApi(configuration)
 
   // 存储用户对话上下文
-  const userConversations = new Map<string, Array<{ role: string; content: string }>>()
+  const userConversations = new Map<string, Array<{ role: 'user' | 'assistant' | 'system'; content: string }>>()
 
   async function generateResponse(userId: string, message: string): Promise<string> {
     try {
@@ -43,14 +42,14 @@ export function apply(ctx: Context, config: Config) {
         conversation = conversation.slice(-10)
       }
 
-      const response = await openai.createChatCompletion({
+      const response = await openai.chat.completions.create({
         model: config.model || 'gpt-3.5-turbo',
         messages: conversation,
         temperature: config.temperature || 0.6,
         max_tokens: 1000,
       })
 
-      const reply = response.data.choices[0]?.message?.content
+      const reply = response.choices[0]?.message?.content
       if (reply) {
         // 添加助手回复到对话历史
         conversation.push({ role: 'assistant', content: reply })
@@ -96,7 +95,7 @@ export function apply(ctx: Context, config: Config) {
 
   // 监听 @ 机器人的消息
   ctx.middleware((session, next) => {
-    if (session.content && session.parsed?.appel) {
+    if (session.content && session.elements?.some(elem => elem.type === 'at' && elem.attrs?.id === ctx.bots[0]?.selfId)) {
       const userId = session.userId!
       generateResponse(userId, session.content).then(response => {
         session.send(response)

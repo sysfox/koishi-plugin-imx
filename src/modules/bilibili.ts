@@ -122,12 +122,9 @@ export function apply(ctx: Context, config: Config) {
       // 向所有监控频道发送通知
       for (const channelId of config.watchChannels || []) {
         try {
-          const session = ctx.bots[0]?.createSession({ 
-            channelId, 
-            platform: ctx.bots[0].platform 
-          })
-          if (session) {
-            await session.send(message)
+          const bot = ctx.bots[0]
+          if (bot) {
+            await bot.sendMessage(channelId, message)
           }
         } catch (error) {
           logger.error(`向频道 ${channelId} 发送开播通知失败:`, error)

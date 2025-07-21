@@ -17,8 +17,9 @@ export interface Config {
   
   // OpenAI 配置
   openai?: {
-    apiKey?: string
+    apiKey: string
     model?: string
+    temperature?: number
   }
   
   // Bilibili 配置
@@ -51,8 +52,9 @@ export const Config: Schema<Config> = Schema.object({
   }).description('MX Space 配置'),
   
   openai: Schema.object({
-    apiKey: Schema.string().description('OpenAI API Key').role('secret'),
+    apiKey: Schema.string().description('OpenAI API Key').role('secret').required(),
     model: Schema.string().default('gpt-3.5-turbo').description('模型名称'),
+    temperature: Schema.number().min(0).max(2).default(0.6).description('温度参数'),
   }).description('OpenAI 配置'),
   
   bilibili: Schema.object({
@@ -76,7 +78,9 @@ export const Config: Schema<Config> = Schema.object({
 
 export function apply(ctx: Context, config: Config) {
   // 注册各个模块
-  ctx.plugin(mxSpace, config.mxSpace)
+  if (config.mxSpace) {
+    ctx.plugin(mxSpace, config.mxSpace)
+  }
   
   if (config.openai?.apiKey) {
     ctx.plugin(openai, config.openai)

@@ -54,45 +54,59 @@ export function apply(ctx: Context, config: Config) {
 
   if (config.enableGreeting) {
     // 早安问候 (每天6点)
-    ctx.cron('0 6 * * *', async () => {
-      const { hitokoto } = await fetchHitokoto()
-      const greetings = [
-        '新的一天也要加油哦',
-        '今天也要元气满满哦！',
-        '今天也是充满希望的一天',
-      ]
-      const greeting = greetings[Math.floor(Math.random() * greetings.length)]
-      
-      const message = `早上好！${greeting}\n\n${hitokoto || ''}`
-      
-      for (const channelId of config.watchChannels || []) {
-        try {
-          const session = ctx.bots[0]?.createSession({ channelId, platform: ctx.bots[0].platform })
-          if (session) {
-            await session.send(message)
+    ctx.setTimeout(() => {
+      const greetingInterval = setInterval(async () => {
+        const now = new Date()
+        if (now.getHours() === 6 && now.getMinutes() === 0) {
+          const { hitokoto } = await fetchHitokoto()
+          const greetings = [
+            '新的一天也要加油哦',
+            '今天也要元气满满哦！',
+            '今天也是充满希望的一天',
+          ]
+          const greeting = greetings[Math.floor(Math.random() * greetings.length)]
+          
+          const message = `早上好！${greeting}\n\n${hitokoto || ''}`
+          
+          for (const channelId of config.watchChannels || []) {
+            try {
+              const bot = ctx.bots[0]
+              if (bot) {
+                await bot.sendMessage(channelId, message)
+              }
+            } catch (error) {
+              logger.error(`Failed to send morning greeting to ${channelId}:`, error)
+            }
           }
-        } catch (error) {
-          logger.error(`Failed to send morning greeting to ${channelId}:`, error)
         }
-      }
-    })
+      }, 60000) // 每分钟检查一次
+      
+      ctx.on('dispose', () => clearInterval(greetingInterval))
+    }, 1000)
 
     // 晚安问候 (每天22点)
-    ctx.cron('0 22 * * *', async () => {
-      const { hitokoto } = await fetchHitokoto()
-      const message = `晚安，早点睡哦！\n\n${hitokoto || ''}`
-      
-      for (const channelId of config.watchChannels || []) {
-        try {
-          const session = ctx.bots[0]?.createSession({ channelId, platform: ctx.bots[0].platform })
-          if (session) {
-            await session.send(message)
+    ctx.setTimeout(() => {
+      const eveningInterval = setInterval(async () => {
+        const now = new Date()
+        if (now.getHours() === 22 && now.getMinutes() === 0) {
+          const { hitokoto } = await fetchHitokoto()
+          const message = `晚安，早点睡哦！\n\n${hitokoto || ''}`
+          
+          for (const channelId of config.watchChannels || []) {
+            try {
+              const bot = ctx.bots[0]
+              if (bot) {
+                await bot.sendMessage(channelId, message)
+              }
+            } catch (error) {
+              logger.error(`Failed to send evening greeting to ${channelId}:`, error)
+            }
           }
-        } catch (error) {
-          logger.error(`Failed to send evening greeting to ${channelId}:`, error)
         }
-      }
-    })
+      }, 60000) // 每分钟检查一次
+      
+      ctx.on('dispose', () => clearInterval(eveningInterval))
+    }, 1000)
   }
 
   // 一言命令
