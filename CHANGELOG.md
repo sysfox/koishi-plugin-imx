@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2025-07-21
+
+### Changed
+- 移除 OpenAI 相关依赖和不必要的包，优化 pnpm-lock.yaml
+
 ## [1.1.0] - 2025-07-21
 
 ### Removed
