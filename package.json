@@ -19,7 +19,12 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "dev": "tsc -b --watch"
+    "dev": "tsc -b --watch",
+    "release": "node scripts/release.js",
+    "release:patch": "node scripts/release.js patch",
+    "release:minor": "node scripts/release.js minor",
+    "release:major": "node scripts/release.js major",
+    "test:release": "node scripts/test-release.js"
   },
   "keywords": [
     "chatbot",
