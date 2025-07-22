@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.4] - 2025-07-22
+
+### 🐛 修复问题
+
+- 🔧 **MX Space 事件处理**: 修复 POST_CREATE 等事件类型大小写不匹配的问题
+  - 将事件类型从小写改为大写以匹配实际的 MX Space webhook 事件格式
+  - 修复了 POST_CREATE、POST_UPDATE、NOTE_CREATE 等事件无法正确处理的问题
+  - 现在能够正确响应 MX Space 发送的所有支持的 webhook 事件
+
 ## [2.2.3] - 2025-07-22
 
 ### ✨ 新增功能
