@@ -45,7 +45,7 @@
     }
   },
   "dependencies": {
-    "@koishijs/plugin-server": "^5.0.0",
+    "@koishijs/plugin-server": "^3.2.7",
     "@mx-space/api-client": "^1.17.0",
     "@mx-space/webhook": "^0.5.0",
     "@tanstack/query-core": "^4.40.0",
