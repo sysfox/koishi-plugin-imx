@@ -416,13 +416,18 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       try {
         const data = await apiClient.aggregate.getStat()
         const {
-          posts, notes, comments, links, says, recently,
-          today_ip_access_count: todayIpAccessCount, 
-          today_max_online: todayMaxOnline, 
-          today_online_total: todayOnlineTotal,
-          unread_comments: unreadComments, 
-          link_apply: linkApply, 
-          call_time: callTime, 
+          posts, 
+          notes, 
+          comments, 
+          links, 
+          says, 
+          recently,
+          today_ip_access_count, 
+          today_max_online, 
+          today_online_total,
+          unread_comments, 
+          link_apply, 
+          call_time, 
           online
         } = data
 
@@ -431,10 +436,10 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           `📝 文章 ${posts} 篇，📔 记录 ${notes} 篇\n` +
           `💬 评论 ${comments} 条，🔗 友链 ${links} 条\n` +
           `💭 说说 ${says} 条，⚡ 速记 ${recently} 条\n\n` +
-          `🔔 未读评论 ${unreadComments} 条，📮 友链申请 ${linkApply} 条\n` +
-          `📈 今日访问 ${todayIpAccessCount} 次，👥 最高在线 ${todayMaxOnline} 人\n` +
-          `📊 总计在线 ${todayOnlineTotal} 人，🔄 调用 ${callTime} 次\n` +
-          `🟢 当前在线 ${online} 人`
+          `🔔 未读评论 ${unread_comments || 0} 条，📮 友链申请 ${link_apply || 0} 条\n` +
+          `📈 今日访问 ${today_ip_access_count || 0} 次，👥 最高在线 ${today_max_online || 0} 人\n` +
+          `📊 总计在线 ${today_online_total || 0} 人，🔄 调用 ${call_time || 0} 次\n` +
+          `🟢 当前在线 ${online || 0} 人`
       } catch (error) {
         logger.error('获取统计信息失败:', error)
         return '获取统计信息失败'
