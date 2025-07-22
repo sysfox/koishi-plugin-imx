@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2025-07-22
+
+### ✨ 新增功能
+
+- 🔧 **Webhook 调试功能**: 添加了专门的 webhook 调试工具和调试页面
+- 📚 **Webhook 配置文档**: 新增 MX Space webhook 配置完整文档和示例
+- 🧹 **HTML 内容清理**: 添加 sanitize-html 依赖，优化 HTML 标签清理功能
+- 🌐 **用户代理更新**: 更新 MX Space API 请求的用户代理头，提升兼容性
+
+### 🔧 技术改进
+
+- **依赖更新**: 添加 `sanitize-html` 依赖用于安全的 HTML 处理
+- **类型定义**: 更新 sanitize-html 相关类型定义
+- **API 优化**: 改进 MX Space API 客户端的请求处理逻辑
+- **Webhook 处理**: 增强 webhook 事件处理逻辑和错误处理
+
+### 📚 文档更新
+
+- 新增 `docs/mx-space-webhook-setup.md` - MX Space Webhook 配置指南
+- 新增 `docs/webhook-config-example.yml` - Webhook 配置示例文件
+- 新增 `scripts/test-webhook.sh` - Webhook 测试脚本
+
+### 🐛 修复
+
+- 优化 HTML 标签清理函数，提供更安全的内容处理
+- 改进 webhook 处理逻辑的稳定性和错误处理
+
 ## [2.1.1] - 2025-07-22
 
 ### Dependencies
