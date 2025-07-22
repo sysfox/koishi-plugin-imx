@@ -51,7 +51,7 @@
     "@tanstack/query-core": "^5.0.0",
     "axios": "^1.10.0",
     "chalk": "^5.0.0",
-    "consola": "^2.15.3",
+    "consola": "^3.0.0",
     "cron": "^4.0.0",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
