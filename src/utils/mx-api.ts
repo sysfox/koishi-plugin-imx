@@ -2,6 +2,7 @@ import { allControllers, createClient } from '@mx-space/api-client'
 import { axiosAdaptor } from '@mx-space/api-client/dist/adaptors/axios'
 import { Context } from 'koishi'
 import { mxSpaceUserAgent } from '../constants'
+import { logSimplifiedError } from './axios-error'
 
 export interface Config {
   baseUrl?: string
@@ -39,14 +40,14 @@ export function getApiClient(ctx: Context, config: Config) {
     },
     (err) => {
       const res = err.response
-      const error = Promise.reject(err)
       if (!res) {
-        return error
+        // 网络错误等，记录简化日志
+        logSimplifiedError(logger, err, 'MX Space API 请求')
+      } else {
+        // HTTP 错误，记录简化日志
+        logSimplifiedError(logger, err, `MX Space API 请求 ${res.config.url}`)
       }
-      logger.error(
-        `HTTP Response Failed ${`${res.config.baseURL || ''}${res.config.url}`}`,
-      )
-      return error
+      return Promise.reject(err)
     },
   )
   const apiClient = createClient(axiosAdaptor)(config.baseUrl, {

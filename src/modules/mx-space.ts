@@ -8,6 +8,7 @@ import { fetchHitokoto } from '../utils/hitokoto'
 import { getApiClient, getMxSpaceAggregateData } from '../utils/mx-api'
 import { urlBuilder } from '../utils/mx-url-builder'
 import { handleMxSpaceEvent } from '../utils/mx-event-handler'
+import { simplifyAxiosError } from '../utils/axios-error'
 
 dayjs.extend(relativeTime)
 
@@ -236,9 +237,10 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
       koaCtx.status = 200
       koaCtx.body = { message: 'Webhook processed successfully' }
     } catch (error: any) {
-      logger.error('处理 MX Space webhook 失败:', error)
+      const simplified = simplifyAxiosError(error, '处理 MX Space webhook')
+      logger.error(simplified.message)
       koaCtx.status = 500
-      koaCtx.body = { error: 'Internal server error', details: error.message }
+      koaCtx.body = { error: 'Internal server error', details: simplified.message }
     }
   })
 
@@ -259,7 +261,8 @@ function setupWelcomeNewMember(ctx: Context, config: Config, logger: any) {
       
       await session.send(welcomeMessage)
     } catch (error) {
-      logger.error('发送欢迎消息失败:', error)
+      const simplified = simplifyAxiosError(error, '发送欢迎消息')
+      logger.warn(simplified.message)
     }
   })
 
@@ -291,7 +294,8 @@ function setupCommentReply(ctx: Context, config: Config, logger: any, globalStat
       globalState.toCommentId = null
       globalState.memoChatId = null
     } catch (error: any) {
-      await session.send(`回复失败！${error.message || error}`)
+      const simplified = simplifyAxiosError(error, '回复评论')
+      await session.send(`回复失败！${simplified.message}`)
       globalState.toCommentId = null
       globalState.memoChatId = null
     }
@@ -326,7 +330,8 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
           logger,
         )
       } catch (error) {
-        logger.error('发送早安消息失败:', error)
+        const simplified = simplifyAxiosError(error, '发送早安消息')
+        logger.warn(simplified.message)
       }
     },
     null,
@@ -357,7 +362,8 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
           logger,
         )
       } catch (error) {
-        logger.error('发送晚安消息失败:', error)
+        const simplified = simplifyAxiosError(error, '发送晚安消息')
+        logger.warn(simplified.message)
       }
     },
     null,
@@ -390,7 +396,8 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
         const { hitokoto, from } = await fetchHitokoto()
         return `💭 ${hitokoto}\n\n—— ${from || '未知'}`
       } catch (error) {
-        logger.error('获取一言失败:', error)
+        const simplified = simplifyAxiosError(error, '获取一言')
+        logger.warn(simplified.message)
         return '获取一言失败'
       }
     })

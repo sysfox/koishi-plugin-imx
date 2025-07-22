@@ -2,6 +2,7 @@ import { Context, Schema, h } from 'koishi'
 import axios from 'axios'
 import { truncateText } from '../utils/helper'
 import { relativeTimeFromNow } from '../utils/time'
+import { axiosRequestWithLog, simplifyAxiosError } from '../utils/axios-error'
 
 export const name = 'bilibili'
 
@@ -49,10 +50,15 @@ export function apply(ctx: Context, config: Config) {
 
       const statusList = []
       for (const roomId of config.roomIds) {
-        try {
-          const isLive = await getRoomLiveStatus(roomId)
+        const isLive = await axiosRequestWithLog(
+          logger,
+          () => getRoomLiveStatus(roomId),
+          `获取房间 ${roomId} 状态`
+        )
+        
+        if (isLive !== null) {
           statusList.push(`房间 ${roomId}: ${isLive ? '🔴 直播中' : '⚫ 未直播'}`)
-        } catch (error) {
+        } else {
           statusList.push(`房间 ${roomId}: ❌ 获取失败`)
         }
       }
@@ -65,21 +71,34 @@ export function apply(ctx: Context, config: Config) {
 
 async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
   for (const roomId of config.roomIds!) {
-    try {
-      const isLive = await getRoomLiveStatus(roomId)
-      const wasLive = liveStatusCache.get(roomId) || false
+    const isLive = await axiosRequestWithLog(
+      logger,
+      () => getRoomLiveStatus(roomId),
+      `检查房间 ${roomId} 直播状态`
+    )
+    
+    if (isLive === null) {
+      // 请求失败，跳过此次检查
+      continue
+    }
+    
+    const wasLive = liveStatusCache.get(roomId) || false
 
-      if (isLive && !wasLive) {
-        // 开播通知
-        const roomInfo = await getRoomInfo(roomId)
+    if (isLive && !wasLive) {
+      // 开播通知
+      const roomInfo = await axiosRequestWithLog(
+        logger,
+        () => getRoomInfo(roomId),
+        `获取房间 ${roomId} 信息`
+      )
+      
+      if (roomInfo) {
         const message = formatLiveMessage(roomInfo)
         await sendToChannels(ctx, config.watchChannels!, message, logger)
       }
-
-      liveStatusCache.set(roomId, isLive)
-    } catch (error) {
-      logger.error(`检查房间 ${roomId} 状态失败:`, error)
     }
+
+    liveStatusCache.set(roomId, isLive)
   }
 }
 
@@ -107,7 +126,8 @@ async function sendToChannels(ctx: Context, channels: string[], message: string,
     try {
       await ctx.broadcast([channelId], message)
     } catch (error) {
-      logger.error(`发送消息到频道 ${channelId} 失败:`, error)
+      const simplified = simplifyAxiosError(error, `发送消息到频道 ${channelId}`)
+      logger.warn(simplified.message)
     }
   }
 }

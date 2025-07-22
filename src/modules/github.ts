@@ -2,6 +2,7 @@ import { Context, Schema, h } from 'koishi'
 import axios from 'axios'
 import { truncateText } from '../utils/helper'
 import { relativeTimeFromNow } from '../utils/time'
+import { axiosRequestWithLog, simplifyAxiosError } from '../utils/axios-error'
 
 export const name = 'github'
 
@@ -44,10 +45,15 @@ export function apply(ctx: Context, config: Config) {
 
       const statusList = []
       for (const repo of config.repositories) {
-        try {
-          const repoInfo = await getRepoInfo(repo)
+        const repoInfo = await axiosRequestWithLog(
+          logger,
+          () => getRepoInfo(repo),
+          `获取仓库 ${repo} 信息`
+        )
+        
+        if (repoInfo) {
           statusList.push(`${repo}: ⭐ ${repoInfo.stargazers_count} | 🍴 ${repoInfo.forks_count}`)
-        } catch (error) {
+        } else {
           statusList.push(`${repo}: ❌ 获取失败`)
         }
       }
