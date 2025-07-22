@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2025-07-22
+
+### 新增功能
+
+- 新成员欢迎功能
+- 评论回复功能
+- MX Space Webhook 事件处理
+- 更新的依赖项和优化的API客户端
+
 ## [2.0.0] - 2025-07-21
 
 ### ✨ 新功能
