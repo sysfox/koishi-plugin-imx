@@ -14,9 +14,43 @@
      - SAY_CREATE (新说说)
      - RECENTLY_CREATE (新动态)
 
+## Webhook 请求头兼容性
+
+本插件兼容多种 webhook 请求头格式：
+
+### MX Space 格式 (推荐)
+
+MX Space 使用以下请求头：
+
+```http
+X-Webhook-Signature: 使用 SHA1 算法生成的签名
+X-Webhook-Event: 事件类型 (如 post_create, note_create)
+X-Webhook-Id: webhook ID
+X-Webhook-Timestamp: 时间戳
+X-Webhook-Signature256: 使用 SHA256 算法生成的签名
+```
+
+### GitHub 格式 (兼容)
+
+也兼容传统的 GitHub webhook 格式：
+
+```http
+X-Hub-Signature-256: sha256=<signature>
+```
+
+## 签名验证
+
+插件支持以下签名算法：
+
+- **SHA1**: 使用 `X-Webhook-Signature` 头部
+- **SHA256**: 使用 `X-Webhook-Signature256` 或 `X-Hub-Signature-256` 头部
+
+优先级：SHA256 > SHA1，如果两种签名都存在，优先使用 SHA256 进行验证。
+
 ## 支持的事件类型
 
 根据 mx-space webhook 规范，支持以下事件：
+
 - `POST_CREATE`: 新文章发布
 - `POST_UPDATE`: 文章更新
 - `NOTE_CREATE`: 新随想发布

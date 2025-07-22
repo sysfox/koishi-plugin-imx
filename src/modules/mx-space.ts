@@ -130,7 +130,19 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
       })
 
       const body = koaCtx.request.body as any
-      const signature = koaCtx.request.headers['x-hub-signature-256'] as string
+      const headers = koaCtx.request.headers
+      
+      // 兼容多种签名头格式
+      // GitHub: x-hub-signature-256
+      // MX Space: X-Webhook-Signature (SHA1), X-Webhook-Signature256 (SHA256)
+      const signature = headers['x-hub-signature-256'] as string || 
+                       headers['x-webhook-signature256'] as string ||
+                       headers['x-webhook-signature'] as string
+      
+      // 获取事件类型和其他 MX Space 专用头
+      const eventType = headers['x-webhook-event'] as string
+      const webhookId = headers['x-webhook-id'] as string
+      const timestamp = headers['x-webhook-timestamp'] as string
       
       // 检查请求体是否存在
       if (!body) {
@@ -144,16 +156,35 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
       if (config.webhook?.secret && signature) {
         const crypto = await import('crypto')
         const payload = JSON.stringify(body)
-        const hmac = crypto.createHmac('sha256', config.webhook.secret)
-        hmac.update(payload)
-        const expectedSignature = 'sha256=' + hmac.digest('hex')
+        let isValidSignature = false
+        
+        // 判断签名算法并验证
+        if (signature.startsWith('sha256=') || headers['x-webhook-signature256']) {
+          // SHA256 签名验证
+          const hmac = crypto.createHmac('sha256', config.webhook.secret)
+          hmac.update(payload)
+          const expectedSignature = signature.startsWith('sha256=') 
+            ? 'sha256=' + hmac.digest('hex')
+            : hmac.digest('hex')
+          isValidSignature = signature === expectedSignature
+        } else if (headers['x-webhook-signature']) {
+          // SHA1 签名验证（MX Space 默认）
+          const hmac = crypto.createHmac('sha1', config.webhook.secret)
+          hmac.update(payload)
+          const expectedSignature = hmac.digest('hex')
+          isValidSignature = signature === expectedSignature
+        }
         
         logger.debug('签名验证:', {
           received: signature,
-          expected: expectedSignature
+          algorithm: signature.startsWith('sha256=') ? 'SHA256' : (headers['x-webhook-signature256'] ? 'SHA256' : 'SHA1'),
+          isValid: isValidSignature,
+          eventType,
+          webhookId,
+          timestamp
         })
         
-        if (signature !== expectedSignature) {
+        if (!isValidSignature) {
           logger.warn('Webhook 签名验证失败')
           koaCtx.status = 401
           koaCtx.body = { error: 'Invalid signature' }
@@ -167,21 +198,40 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
       }
       
       // 检查请求体格式
-      if (!body.type || !body.data) {
+      // 兼容多种格式：
+      // 1. GitHub 格式: { type, data }
+      // 2. MX Space 格式: 直接的事件数据，事件类型在 X-Webhook-Event 头中
+      let eventTypeToProcess: string
+      let eventData: any
+      
+      if (eventType) {
+        // MX Space 格式：事件类型在头部，数据在请求体
+        eventTypeToProcess = eventType
+        eventData = body
+      } else if (body.type && body.data) {
+        // GitHub 格式：事件类型和数据都在请求体
+        eventTypeToProcess = body.type
+        eventData = body.data
+      } else {
         logger.warn('Webhook 请求体格式错误:', body)
         koaCtx.status = 400
         koaCtx.body = { 
           error: 'Invalid webhook payload', 
-          details: 'Missing required fields: type or data',
-          received: body
+          details: 'Missing required fields: event type or data',
+          received: body,
+          headers: { eventType, webhookId, timestamp }
         }
         return
       }
 
-      logger.info(`处理 MX Space 事件: ${body.type}`)
+      logger.info(`处理 MX Space 事件: ${eventTypeToProcess}`, {
+        webhookId,
+        timestamp,
+        format: eventType ? 'mx-space' : 'github'
+      })
 
       // 处理事件
-      await handleMxSpaceEvent(ctx, config, body.type, body.data, logger)
+      await handleMxSpaceEvent(ctx, config, eventTypeToProcess, eventData, logger)
       
       koaCtx.status = 200
       koaCtx.body = { message: 'Webhook processed successfully' }

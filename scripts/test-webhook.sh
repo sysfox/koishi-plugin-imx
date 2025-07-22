@@ -38,7 +38,13 @@ calculate_signature() {
     echo -n "$payload" | openssl dgst -sha256 -hmac "$SECRET" -binary | xxd -p | tr -d '\n'
 }
 
-# 函数：发送测试请求
+# 函数：计算 HMAC-SHA1 签名
+calculate_sha1_signature() {
+    local payload="$1"
+    echo -n "$payload" | openssl dgst -sha1 -hmac "$SECRET" -binary | xxd -p | tr -d '\n'
+}
+
+# 函数：发送测试请求 (GitHub 格式)
 send_test_request() {
     local test_name="$1"
     local payload="$2"
@@ -62,6 +68,61 @@ send_test_request() {
         -X POST "${KOISHI_URL}${WEBHOOK_PATH}" \
         -H "Content-Type: application/json" \
         ${signature:+-H "X-Hub-Signature-256: $signature"} \
+        -d "$payload")
+    
+    # 解析响应
+    body=$(echo "$response" | sed '/^HTTP_CODE:/,$d')
+    http_code=$(echo "$response" | grep "HTTP_CODE:" | cut -d: -f2)
+    time_total=$(echo "$response" | grep "TIME:" | cut -d: -f2)
+    
+    echo -e "响应码: ${http_code}"
+    echo -e "响应时间: ${time_total}s"
+    echo -e "响应内容: ${body}"
+    
+    if [ "$http_code" = "200" ]; then
+        echo -e "${GREEN}✓ 测试通过${NC}"
+    else
+        echo -e "${RED}✗ 测试失败${NC}"
+    fi
+    
+    echo ""
+}
+
+# 函数：发送 MX Space 格式测试请求
+send_mx_space_request() {
+    local test_name="$1"
+    local event_type="$2"
+    local payload="$3"
+    local signature_sha1=""
+    local signature_sha256=""
+    local webhook_id="test-webhook-$(date +%s)"
+    local timestamp="$(date +%s)"
+    
+    if [ -n "$SECRET" ]; then
+        signature_sha1="$(calculate_sha1_signature "$payload")"
+        signature_sha256="$(calculate_signature "$payload")"
+    fi
+    
+    echo -e "${YELLOW}测试: ${test_name} (MX Space 格式)${NC}"
+    echo -e "事件类型: ${event_type}"
+    echo -e "请求数据: ${payload}"
+    
+    if [ -n "$signature_sha1" ]; then
+        echo -e "SHA1 签名: ${signature_sha1}"
+        echo -e "SHA256 签名: ${signature_sha256}"
+    fi
+    
+    echo -e "${BLUE}发送请求...${NC}"
+    
+    # 发送请求并捕获响应
+    response=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+        -X POST "${KOISHI_URL}${WEBHOOK_PATH}" \
+        -H "Content-Type: application/json" \
+        -H "X-Webhook-Event: $event_type" \
+        -H "X-Webhook-Id: $webhook_id" \
+        -H "X-Webhook-Timestamp: $timestamp" \
+        ${signature_sha1:+-H "X-Webhook-Signature: $signature_sha1"} \
+        ${signature_sha256:+-H "X-Webhook-Signature256: $signature_sha256"} \
         -d "$payload")
     
     # 解析响应
@@ -156,6 +217,57 @@ COMMENT_CREATE_PAYLOAD='{
 }'
 
 send_test_request "COMMENT_CREATE 事件" "$COMMENT_CREATE_PAYLOAD"
+
+echo ""
+echo -e "${BLUE}=== MX Space 格式测试 ===${NC}"
+
+# MX Space 格式的 POST_CREATE 事件
+MX_POST_CREATE_DATA='{
+  "id": "test-123",
+  "title": "测试文章",
+  "text": "这是一篇测试文章的内容，用于验证 mx-space webhook 功能是否正常工作。",
+  "summary": "测试文章摘要",
+  "slug": "test-post",
+  "created": "2025-07-22T10:00:00.000Z",
+  "category": {
+    "id": "cat-123",
+    "name": "技术",
+    "slug": "tech"
+  }
+}'
+
+send_mx_space_request "POST_CREATE 事件" "post_create" "$MX_POST_CREATE_DATA"
+
+# MX Space 格式的 NOTE_CREATE 事件
+MX_NOTE_CREATE_DATA='{
+  "id": "note-123",
+  "title": "测试日记",
+  "text": "今天天气不错，写了一些代码测试 mx-space webhook 功能。",
+  "nid": 123,
+  "created": "2025-07-22T10:00:00.000Z",
+  "mood": "开心",
+  "weather": "晴天",
+  "hide": false,
+  "password": null,
+  "images": []
+}'
+
+send_mx_space_request "NOTE_CREATE 事件" "note_create" "$MX_NOTE_CREATE_DATA"
+
+# MX Space 格式的 COMMENT_CREATE 事件
+MX_COMMENT_CREATE_DATA='{
+  "id": "comment-123",
+  "author": "测试用户",
+  "text": "这是一条测试评论",
+  "refType": "Post",
+  "isWhispers": false,
+  "parent": null,
+  "created": "2025-07-22T10:00:00.000Z"
+}'
+
+send_mx_space_request "COMMENT_CREATE 事件" "comment_create" "$MX_COMMENT_CREATE_DATA"
+
+echo ""
 
 # 测试4: 签名验证测试（如果配置了密钥）
 if [ -n "$SECRET" ] && [ "$SECRET" != "your-webhook-secret" ]; then
