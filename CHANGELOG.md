@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.8] - 2025-07-22
+
+### Added
+- 请在此处添加新功能描述
+
+### Changed
+- 请在此处添加修改的功能描述
+
+### Fixed
+- 请在此处添加修复的问题描述
+
+
 ## [2.2.7] - 2025-07-22
 
 ### Fixed
