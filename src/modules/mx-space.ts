@@ -9,6 +9,7 @@ import { getApiClient, getMxSpaceAggregateData } from '../utils/mx-api'
 import { urlBuilder } from '../utils/mx-url-builder'
 import { handleMxSpaceEvent } from '../utils/mx-event-handler'
 import { simplifyAxiosError } from '../utils/axios-error'
+import { sendMessage } from '../utils/broadcast'
 
 dayjs.extend(relativeTime)
 
@@ -22,12 +23,16 @@ export interface Config {
     secret?: string
     path?: string
     watchChannels?: string[]
+    broadcastToAll?: boolean
+    excludeChannels?: string[]
   }
   greeting?: {
     enabled?: boolean
     channels?: string[]
     morningTime?: string
     eveningTime?: string
+    broadcastToAll?: boolean
+    excludeChannels?: string[]
   }
   commands?: {
     enabled?: boolean
@@ -50,12 +55,16 @@ export const Config: Schema<Config> = Schema.object({
     secret: Schema.string().description('MX Space Webhook Secret').role('secret'),
     path: Schema.string().description('Webhook 路径').default('/mx-space/webhook'),
     watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
+    broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+    excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
   }).description('Webhook 配置'),
   greeting: Schema.object({
     enabled: Schema.boolean().description('启用问候功能').default(true),
     channels: Schema.array(Schema.string()).description('问候消息发送的频道').default([]),
     morningTime: Schema.string().description('早安时间 (cron格式)').default('0 0 6 * * *'),
     eveningTime: Schema.string().description('晚安时间 (cron格式)').default('0 0 22 * * *'),
+    broadcastToAll: Schema.boolean().description('是否广播问候消息到所有联系人').default(false),
+    excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
   }).description('问候功能配置'),
   commands: Schema.object({
     enabled: Schema.boolean().description('启用命令功能').default(true),
@@ -323,12 +332,11 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
         const greeting = sample(greetings) || greetings[0]
 
         const message = `🌅 早上好！${greeting}\n\n${hitokoto || ''}`
-        await sendToChannels(
-          ctx,
-          config.greeting!.channels || [],
-          message,
-          logger,
-        )
+        await sendMessage(ctx, message, {
+          watchChannels: config.greeting!.channels || [],
+          broadcastToAll: config.greeting!.broadcastToAll || false,
+          excludeChannels: config.greeting!.excludeChannels || [],
+        }, logger)
       } catch (error) {
         const simplified = simplifyAxiosError(error, '发送早安消息')
         logger.warn(simplified.message)
@@ -355,12 +363,11 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
         const greeting = sample(greetings) || greetings[0]
 
         const message = `🌙 ${greeting}\n\n${hitokoto || ''}`
-        await sendToChannels(
-          ctx,
-          config.greeting!.channels || [],
-          message,
-          logger,
-        )
+        await sendMessage(ctx, message, {
+          watchChannels: config.greeting!.channels || [],
+          broadcastToAll: config.greeting!.broadcastToAll || false,
+          excludeChannels: config.greeting!.excludeChannels || [],
+        }, logger)
       } catch (error) {
         const simplified = simplifyAxiosError(error, '发送晚安消息')
         logger.warn(simplified.message)
@@ -538,26 +545,4 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
     })
 
   logger.info('MX Space 命令已注册')
-}
-
-async function sendToChannels(
-  ctx: Context,
-  channels: string[],
-  message: string,
-  logger: any,
-) {
-  if (!channels.length) return
-
-  const tasks = channels.map(async (channelId) => {
-    try {
-      const bot = ctx.bots.find(bot => bot.selfId)
-      if (bot) {
-        await bot.sendMessage(channelId, message)
-      }
-    } catch (error) {
-      logger.error(`发送消息到频道 ${channelId} 失败:`, error)
-    }
-  })
-
-  await Promise.allSettled(tasks)
 }

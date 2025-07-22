@@ -5,6 +5,7 @@ import type { CommentModel, LinkModel, NoteModel, PageModel, PostModel } from '@
 import { CollectionRefTypes, LinkState } from '@mx-space/api-client'
 import { getApiClient, getMxSpaceAggregateData } from './mx-api'
 import { urlBuilder } from './mx-url-builder'
+import { sendMessage } from './broadcast'
 
 // MX Space 事件类型
 export enum BusinessEvents {
@@ -30,24 +31,20 @@ export async function handleMxSpaceEvent(
     const aggregateData = await getMxSpaceAggregateData(ctx, config)
     const owner = aggregateData.user
     const watchChannels = config.webhook?.watchChannels || []
+    const broadcastToAll = config.webhook?.broadcastToAll || false
+    const excludeChannels = config.webhook?.excludeChannels || []
 
-    if (!watchChannels.length) {
-      logger.warn('没有配置监听频道，跳过事件处理')
+    if (!broadcastToAll && !watchChannels.length) {
+      logger.warn('没有配置监听频道且未启用广播到所有联系人，跳过事件处理')
       return
     }
 
     const sendToChannels = async (message: string | h[]) => {
-      const tasks = watchChannels.map(async (channelId: string) => {
-        try {
-          const bot = ctx.bots.find(bot => bot.selfId)
-          if (bot) {
-            await bot.sendMessage(channelId, message)
-          }
-        } catch (error) {
-          logger.error(`发送消息到频道 ${channelId} 失败:`, error)
-        }
-      })
-      await Promise.allSettled(tasks)
+      await sendMessage(ctx, message, {
+        watchChannels,
+        broadcastToAll,
+        excludeChannels,
+      }, logger)
     }
 
     switch (type) {

@@ -17,12 +17,16 @@ export interface Config {
       secret?: string
       path?: string
       watchChannels?: string[]
+      broadcastToAll?: boolean
+      excludeChannels?: string[]
     }
     greeting?: {
       enabled?: boolean
       channels?: string[]
       morningTime?: string
       eveningTime?: string
+      broadcastToAll?: boolean
+      excludeChannels?: string[]
     }
     commands?: {
       enabled?: boolean
@@ -45,6 +49,8 @@ export interface Config {
       roomId?: string
       watchChannels?: string[]
       checkInterval?: number
+      broadcastToAll?: boolean
+      excludeChannels?: string[]
     }
     userAgent?: string
   }
@@ -56,6 +62,8 @@ export interface Config {
       secret?: string
       path?: string
       watchChannels?: string[]
+      broadcastToAll?: boolean
+      excludeChannels?: string[]
     }
   }
   
@@ -84,12 +92,16 @@ export const Config: Schema<Config> = Schema.object({
       secret: Schema.string().description('MX Space Webhook Secret').role('secret'),
       path: Schema.string().description('Webhook 路径').default('/mx-space/webhook'),
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
+      broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+      excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
     }).description('Webhook 配置'),
     greeting: Schema.object({
       enabled: Schema.boolean().description('启用问候功能').default(true),
       channels: Schema.array(Schema.string()).description('问候消息发送的频道').default([]),
       morningTime: Schema.string().description('早安时间 (cron格式)').default('0 0 6 * * *'),
       eveningTime: Schema.string().description('晚安时间 (cron格式)').default('0 0 22 * * *'),
+      broadcastToAll: Schema.boolean().description('是否广播问候消息到所有联系人').default(false),
+      excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
     }).description('问候功能配置'),
     commands: Schema.object({
       enabled: Schema.boolean().description('启用命令功能').default(true),
@@ -111,6 +123,8 @@ export const Config: Schema<Config> = Schema.object({
       roomId: Schema.string().description('B站直播间房间号'),
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
       checkInterval: Schema.number().description('检查间隔（分钟）').default(1).min(1).max(10),
+      broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+      excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
     }).description('直播间监控配置'),
     userAgent: Schema.string().description('User-Agent').default('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
   }).description('Bilibili 配置'),
@@ -121,6 +135,8 @@ export const Config: Schema<Config> = Schema.object({
       secret: Schema.string().description('GitHub Webhook Secret').role('secret'),
       path: Schema.string().description('Webhook 路径').default('/github/webhook'),
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
+      broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+      excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
     }).description('GitHub Webhook 配置'),
   }).description('GitHub 配置'),
   

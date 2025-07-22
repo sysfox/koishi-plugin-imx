@@ -85,3 +85,70 @@ server {
 ```
 
 这样 webhook URL 就可以设置为：`http://your-domain.com/koishi/mx-space/webhook`
+
+## 广播到所有联系人功能
+
+### 启用广播功能
+
+如果你希望 webhook 事件广播到所有联系人（包括群组和私聊），可以在 Koishi 配置中启用 `broadcastToAll` 选项：
+
+```yaml
+plugins:
+  imx:
+    mxSpace:
+      baseUrl: "https://your-mx-space-api.com"
+      token: "your-mx-space-token"
+      webhook:
+        secret: "your-webhook-secret"
+        path: "/mx-space/webhook"
+        broadcastToAll: true
+        excludeChannels: ["channel-id-to-exclude"]
+```
+
+### 配置选项说明
+
+- `broadcastToAll`: 是否广播到所有联系人
+  - `false`（默认）: 只发送到 `watchChannels` 指定的频道
+  - `true`: 广播到机器人可访问的所有群组和私聊
+- `excludeChannels`: 排除的频道ID列表
+  - 当启用 `broadcastToAll` 时，这些频道不会收到广播消息
+  - 可以用来排除测试群组或不希望接收通知的频道
+- `watchChannels`: 监听的频道ID列表
+  - 当 `broadcastToAll` 为 `false` 时，只有这些频道会收到消息
+
+### 问候功能广播
+
+问候功能也支持广播到所有联系人：
+
+```yaml
+plugins:
+  imx:
+    mxSpace:
+      greeting:
+        enabled: true
+        broadcastToAll: true
+        excludeChannels: ["channel-id-to-exclude"]
+        morningTime: "0 0 6 * * *"
+        eveningTime: "0 0 22 * * *"
+```
+
+### Bilibili 直播通知广播
+
+Bilibili 直播监控也支持广播功能：
+
+```yaml
+plugins:
+  imx:
+    bilibili:
+      enabled: true
+      roomIds: [123456]
+      broadcastToAll: true
+      excludeChannels: ["channel-id-to-exclude"]
+```
+
+### 注意事项
+
+1. **性能影响**: 启用广播功能可能会增加消息发送的延迟，特别是当机器人加入了大量群组时
+2. **权限要求**: 机器人需要有发送消息的权限才能成功广播
+3. **错误处理**: 发送失败的消息会在日志中记录，但不会影响其他消息的发送
+4. **排除频道**: 建议将测试群组或不希望接收通知的频道添加到 `excludeChannels` 列表中

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { truncateText } from '../utils/helper'
 import { relativeTimeFromNow } from '../utils/time'
 import { axiosRequestWithLog, simplifyAxiosError } from '../utils/axios-error'
+import { sendMessage } from '../utils/broadcast'
 
 export const name = 'bilibili'
 
@@ -11,6 +12,8 @@ export interface Config {
   roomIds?: number[]
   watchChannels?: string[]
   checkInterval?: number
+  broadcastToAll?: boolean
+  excludeChannels?: string[]
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -18,6 +21,8 @@ export const Config: Schema<Config> = Schema.object({
   roomIds: Schema.array(Schema.number()).description('监控的直播间ID列表').default([]),
   watchChannels: Schema.array(Schema.string()).description('推送通知的频道ID列表').default([]),
   checkInterval: Schema.number().description('检查间隔（分钟）').default(5).min(1).max(60),
+  broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+  excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
 })
 
 const liveStatusCache = new Map<number, boolean>()
@@ -94,7 +99,11 @@ async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
       
       if (roomInfo) {
         const message = formatLiveMessage(roomInfo)
-        await sendToChannels(ctx, config.watchChannels!, message, logger)
+        await sendMessage(ctx, message, {
+          watchChannels: config.watchChannels,
+          broadcastToAll: config.broadcastToAll,
+          excludeChannels: config.excludeChannels,
+        }, logger)
       }
     }
 
@@ -119,15 +128,4 @@ function formatLiveMessage(roomInfo: any): string {
     `👥 观看人数: ${roomInfo.online}`,
     `🔗 https://live.bilibili.com/${roomInfo.room_id}`,
   ].join('\n')
-}
-
-async function sendToChannels(ctx: Context, channels: string[], message: string, logger: any) {
-  for (const channelId of channels) {
-    try {
-      await ctx.broadcast([channelId], message)
-    } catch (error) {
-      const simplified = simplifyAxiosError(error, `发送消息到频道 ${channelId}`)
-      logger.warn(simplified.message)
-    }
-  }
 }
