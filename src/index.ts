@@ -1,10 +1,12 @@
 import { Context, Schema } from 'koishi'
+import type {} from '@koishijs/plugin-server'
 import * as mxSpace from './modules/mx-space'
 import * as bilibili from './modules/bilibili'
 import * as github from './modules/github'
 import * as shared from './shared'
 
 export const name = 'imx'
+export const inject = ['server']
 
 export interface Config {
   // MX Space 配置
@@ -25,6 +27,14 @@ export interface Config {
     commands?: {
       enabled?: boolean
       replyPrefix?: string
+    }
+    welcomeNewMember?: {
+      enabled?: boolean
+      channels?: string[]
+    }
+    commentReply?: {
+      enabled?: boolean
+      channels?: string[]
     }
   }
   
@@ -85,6 +95,14 @@ export const Config: Schema<Config> = Schema.object({
       enabled: Schema.boolean().description('启用命令功能').default(true),
       replyPrefix: Schema.string().description('回复前缀').default('来自 Mix Space 的'),
     }).description('命令功能配置'),
+    welcomeNewMember: Schema.object({
+      enabled: Schema.boolean().description('启用新成员欢迎功能').default(false),
+      channels: Schema.array(Schema.string()).description('监听的群组ID列表').default([]),
+    }).description('新成员欢迎配置'),
+    commentReply: Schema.object({
+      enabled: Schema.boolean().description('启用评论回复功能').default(false),
+      channels: Schema.array(Schema.string()).description('允许回复评论的频道ID列表').default([]),
+    }).description('评论回复配置'),
   }).description('MX Space 配置'),
   
   bilibili: Schema.object({
@@ -153,7 +171,9 @@ export function apply(ctx: Context, config: Config) {
   if (config.shared) {
     ctx.plugin(shared, config.shared)
     logger.info('共享功能模块已加载')
+  } else {
+    logger.debug('共享功能未配置')
   }
-
-  logger.info('IMX 插件加载完成')
+  
+  logger.info('IMX 插件启动完成')
 }

@@ -1,20 +1,27 @@
-import { Context, Schema, h } from 'koishi'
+import { Context, Schema, h, Session } from 'koishi'
 import { CronJob } from 'cron'
-import { fetchHitokoto } from '../utils/hitokoto'
-import { getApiClient, getMxSpaceAggregateData } from '../utils/mx-api'
-import { urlBuilder } from '../utils/mx-url-builder'
+import { sample } from 'lodash'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import RemoveMarkdown from 'remove-markdown'
+import { fetchHitokoto } from '../utils/hitokoto'
+import { getApiClient, getMxSpaceAggregateData } from '../utils/mx-api'
+import { urlBuilder } from '../utils/mx-url-builder'
+import { handleMxSpaceEvent } from '../utils/mx-event-handler'
+
 dayjs.extend(relativeTime)
 
 export const name = 'mx-space'
+export const inject = ['server']
 
 export interface Config {
   baseUrl?: string
   token?: string
-  webhookSecret?: string
-  watchGroupIds?: string[]
+  webhook?: {
+    secret?: string
+    path?: string
+    watchChannels?: string[]
+  }
   greeting?: {
     enabled?: boolean
     channels?: string[]
@@ -25,17 +32,24 @@ export interface Config {
     enabled?: boolean
     replyPrefix?: string
   }
+  welcomeNewMember?: {
+    enabled?: boolean
+    channels?: string[]
+  }
+  commentReply?: {
+    enabled?: boolean
+    channels?: string[]
+  }
 }
 
 export const Config: Schema<Config> = Schema.object({
   baseUrl: Schema.string().description('MX Space API 地址').required(),
   token: Schema.string().description('MX Space API Token').role('secret'),
-  webhookSecret: Schema.string()
-    .description('MX Space Webhook Secret')
-    .role('secret'),
-  watchGroupIds: Schema.array(Schema.string())
-    .description('事件通知频道')
-    .default([]),
+  webhook: Schema.object({
+    secret: Schema.string().description('MX Space Webhook Secret').role('secret'),
+    path: Schema.string().description('Webhook 路径').default('/mx-space/webhook'),
+    watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
+  }).description('Webhook 配置'),
   greeting: Schema.object({
     enabled: Schema.boolean().description('启用问候功能').default(true),
     channels: Schema.array(Schema.string()).description('问候消息发送的频道').default([]),
@@ -46,6 +60,14 @@ export const Config: Schema<Config> = Schema.object({
     enabled: Schema.boolean().description('启用命令功能').default(true),
     replyPrefix: Schema.string().description('回复前缀').default('来自 Mix Space 的'),
   }).description('命令功能配置'),
+  welcomeNewMember: Schema.object({
+    enabled: Schema.boolean().description('启用新成员欢迎功能').default(false),
+    channels: Schema.array(Schema.string()).description('监听的群组ID列表').default([]),
+  }).description('新成员欢迎配置'),
+  commentReply: Schema.object({
+    enabled: Schema.boolean().description('启用评论回复功能').default(false),
+    channels: Schema.array(Schema.string()).description('允许回复评论的频道ID列表').default([]),
+  }).description('评论回复配置'),
 })
 
 export function apply(ctx: Context, config: Config) {
@@ -54,6 +76,17 @@ export function apply(ctx: Context, config: Config) {
   if (!config.baseUrl) {
     logger.warn('MX Space baseUrl not configured')
     return
+  }
+
+  // 全局状态存储
+  const globalState = {
+    toCommentId: null as string | null,
+    memoChatId: null as string | null,
+  }
+
+  // 设置 Webhook 处理器
+  if (config.webhook?.secret && ctx.server) {
+    setupWebhook(ctx, config, logger)
   }
 
   // 设置问候功能
@@ -66,7 +99,103 @@ export function apply(ctx: Context, config: Config) {
     setupCommands(ctx, config, logger)
   }
 
+  // 设置新成员欢迎
+  if (config.welcomeNewMember?.enabled) {
+    setupWelcomeNewMember(ctx, config, logger)
+  }
+
+  // 设置评论回复功能
+  if (config.commentReply?.enabled) {
+    setupCommentReply(ctx, config, logger, globalState)
+  }
+
   logger.info('MX Space 模块已启动')
+}
+
+function setupWebhook(ctx: Context, config: Config, logger: any) {
+  if (!config.webhook?.secret || !ctx.server) return
+
+  const webhookPath = config.webhook.path || '/mx-space/webhook'
+  
+  ctx.server.post(webhookPath, async (koaCtx: any) => {
+    try {
+      const body = koaCtx.request.body as any
+      const signature = koaCtx.request.headers['x-hub-signature-256'] as string
+      
+      // 简单的签名验证（生产环境应该使用更安全的验证方式）
+      if (!body.type || !body.data) {
+        koaCtx.status = 400
+        return
+      }
+
+      // 处理事件
+      await handleMxSpaceEvent(ctx, config, body.type, body.data, logger)
+      
+      koaCtx.status = 200
+    } catch (error) {
+      logger.error('处理 MX Space webhook 失败:', error)
+      koaCtx.status = 500
+    }
+  })
+
+  logger.info(`MX Space Webhook 已启动，监听路径: ${webhookPath}`)
+}
+
+function setupWelcomeNewMember(ctx: Context, config: Config, logger: any) {
+  if (!config.welcomeNewMember?.channels?.length) return
+
+  ctx.on('guild-member-added', async (session) => {
+    const channelId = session.channelId
+    if (!channelId || !config.welcomeNewMember?.channels?.includes(channelId)) return
+
+    try {
+      const { hitokoto } = await fetchHitokoto()
+      const username = session.username || session.userId
+      const welcomeMessage = `欢迎新成员 ${username}！\n\n${hitokoto || ''}`
+      
+      await session.send(welcomeMessage)
+    } catch (error) {
+      logger.error('发送欢迎消息失败:', error)
+    }
+  })
+
+  logger.info('新成员欢迎功能已启用')
+}
+
+function setupCommentReply(ctx: Context, config: Config, logger: any, globalState: any) {
+  if (!config.commentReply?.channels?.length) return
+
+  // 处理回复消息的中间件
+  ctx.middleware(async (session, next) => {
+    if (session.type !== 'message' || !session.content) return next()
+    
+    const channelId = session.channelId
+    if (!channelId || !config.commentReply?.channels?.includes(channelId)) return next()
+    if (channelId !== globalState.memoChatId || !globalState.toCommentId) return next()
+
+    try {
+      const apiClient = getApiClient(ctx, config)
+      await apiClient.comment.proxy.master
+        .reply(globalState.toCommentId)
+        .post({
+          data: { text: session.content }
+        })
+
+      await session.send('回复成功！')
+      
+      // 清除状态
+      globalState.toCommentId = null
+      globalState.memoChatId = null
+    } catch (error: any) {
+      await session.send(`回复失败！${error.message || error}`)
+      globalState.toCommentId = null
+      globalState.memoChatId = null
+    }
+
+    return
+  })
+
+  logger.info('评论回复功能已启用')
 }
 
 function setupGreeting(ctx: Context, config: Config, logger: any) {
@@ -83,7 +212,7 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
           '早上好！愿你今天心情美丽',
           '新的一天开始了，加油！',
         ]
-        const greeting = greetings[Math.floor(Math.random() * greetings.length)]
+        const greeting = sample(greetings) || greetings[0]
 
         const message = `🌅 早上好！${greeting}\n\n${hitokoto || ''}`
         await sendToChannels(
@@ -114,7 +243,7 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
           '睡个好觉，明天会更好',
           '夜深了，注意休息哦',
         ]
-        const greeting = greetings[Math.floor(Math.random() * greetings.length)]
+        const greeting = sample(greetings) || greetings[0]
 
         const message = `🌙 ${greeting}\n\n${hitokoto || ''}`
         await sendToChannels(
@@ -148,148 +277,154 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
 function setupCommands(ctx: Context, config: Config, logger: any) {
   const apiClient = getApiClient(ctx, config)
   const cmd = ctx.command('mx-space', 'MX Space 相关功能')
+
   // 一言命令
   cmd
     .subcommand('.hitokoto', '获取一言')
     .action(async ({ session }) => {
       try {
         const { hitokoto, from } = await fetchHitokoto()
-        return `💭 ${hitokoto}\n\n—— ${from}`
+        return `💭 ${hitokoto}\n\n—— ${from || '未知'}`
       } catch (error) {
         logger.error('获取一言失败:', error)
         return '获取一言失败'
       }
     })
 
+  // 统计信息命令
   cmd
-    .subcommand('.posts [page]', '获取最新的 Post 列表')
-    .action(async ({ session }, page = '1') => {
+    .subcommand('.stat', '获取 MX Space 统计信息')
+    .action(async ({ session }) => {
       try {
-        const pageNum = parseInt(page) || 1
-        const data = await apiClient.post.getList(pageNum)
+        const data = await apiClient.aggregate.getStat()
+        const {
+          posts, notes, comments, links, says, recently,
+          todayIpAccessCount, todayMaxOnline, todayOnlineTotal,
+          unreadComments, linkApply, callTime, online
+        } = data
+
+        const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
+        return `📊 ${replyPrefix}统计信息：\n\n` +
+          `📝 文章 ${posts} 篇，📔 记录 ${notes} 篇\n` +
+          `💬 评论 ${comments} 条，🔗 友链 ${links} 条\n` +
+          `💭 说说 ${says} 条，⚡ 速记 ${recently} 条\n\n` +
+          `🔔 未读评论 ${unreadComments} 条，📮 友链申请 ${linkApply} 条\n` +
+          `📈 今日访问 ${todayIpAccessCount} 次，👥 最高在线 ${todayMaxOnline} 人\n` +
+          `📊 总计在线 ${todayOnlineTotal} 人，🔄 调用 ${callTime} 次\n` +
+          `🟢 当前在线 ${online} 人`
+      } catch (error) {
+        logger.error('获取统计信息失败:', error)
+        return '获取统计信息失败'
+      }
+    })
+
+  // 获取最新文章
+  cmd
+    .subcommand('.posts [page:number]', '获取最新的文章列表')
+    .action(async ({ session }, page = 1) => {
+      try {
+        const data = await apiClient.post.getList(page, 10)
+        if (!data.data.length) {
+          return '没有找到文章'
+        }
+
         const aggregateData = await getMxSpaceAggregateData(ctx, config)
-        const { webUrl } = aggregateData.url
-        const text = data.data
-          .map(
-            (post: any) =>
-              `${dayjs(post.created).fromNow()}前\n[${post.title}](${webUrl}/posts/${post.category.slug}/${post.slug})`,
-          )
-          .join('\n')
+        const webUrl = aggregateData.url.webUrl
 
-        const markupText = `*文章列表*\n\n${text}`
+        const articles = data.data.map((post: any) => {
+          const timeAgo = dayjs(post.created).fromNow()
+          const url = `${webUrl}/posts/${post.category.slug}/${post.slug}`
+          return `${timeAgo} · [${post.title}](${url})`
+        }).join('\n')
 
-        return markupText
+        const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
+        return `📚 ${replyPrefix}最新文章：\n\n${articles}`
       } catch (error) {
         logger.error('获取文章列表失败:', error)
         return '获取文章列表失败'
       }
     })
 
+  // 获取最新日记
   cmd
-    .subcommand('.notes [page]', '获取最新的 Note 列表')
-    .action(async ({ session }, page = '1') => {
+    .subcommand('.notes [page:number]', '获取最新的日记列表')
+    .action(async ({ session }, page = 1) => {
       try {
-        const pageNum = parseInt(page) || 1
-        const data = await apiClient.note.getList(pageNum, 10)
+        const data = await apiClient.note.getList(page, 10)
+        if (!data.data.length) {
+          return '没有找到日记'
+        }
+
         const aggregateData = await getMxSpaceAggregateData(ctx, config)
-        const { webUrl } = aggregateData.url
-        const text = data.data
-          .map(
-            (note: any) =>
-              `${dayjs(note.created).fromNow()}前\n[${note.title}](${webUrl}/notes/${note.nid})`,
-          )
-          .join('\n')
+        const webUrl = aggregateData.url.webUrl
 
-        const markupText = `*笔记列表*\n\n${text}`
+        const notes = data.data.map((note: any) => {
+          const timeAgo = dayjs(note.created).fromNow()
+          const url = `${webUrl}/notes/${note.nid}`
+          return `${timeAgo} · [${note.title}](${url})`
+        }).join('\n')
 
-        return markupText
+        const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
+        return `📔 ${replyPrefix}最新日记：\n\n${notes}`
       } catch (error) {
-        logger.error('获取笔记列表失败:', error)
-        return '获取笔记列表失败'
+        logger.error('获取日记列表失败:', error)
+        return '获取日记列表失败'
       }
     })
 
+  // 获取详情命令
   cmd
-    .subcommand('.post <offset>', '获取 Post 详情')
-    .action(async ({ session }, offset = '1') => {
-      try {
-        const offsetNum = parseInt(offset) || 1
-        const data = await apiClient.post.getList(offsetNum, 1)
-        if (!data.data.length) {
-          return '没有找到文章'
-        }
-        const postDetail = data.data[0]
-        const url = await urlBuilder.build(ctx, config, postDetail)
+    .subcommand('.detail <type> [offset:number]', '获取文章或日记详情')
+    .action(async ({ session }, type: string, offset = 1) => {
+      if (!['post', 'note'].includes(type)) {
+        return '类型必须是 post 或 note'
+      }
 
-        return `[${postDetail.title}](${url})\n\n${RemoveMarkdown(
-          postDetail.text,
-        )
-          .split('\n\n')
-          .slice(0, 3)
-          .join('\n\n')}\n\n[阅读全文](${url})`
+      try {
+        const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
+        
+        if (type === 'post') {
+          const data = await apiClient.post.getList(offset, 1)
+          if (!data.data.length) {
+            return '没有找到文章'
+          }
+
+          const post = data.data[0]
+          const url = await urlBuilder.build(ctx, config, post)
+          const preview = RemoveMarkdown(post.text)
+            .split('\n\n')
+            .slice(0, 3)
+            .join('\n\n')
+            .substring(0, 200)
+
+          return `📚 ${replyPrefix}文章详情：\n\n` +
+            `📝 ${post.title}\n\n` +
+            `${preview}${preview.length >= 200 ? '...' : ''}\n\n` +
+            `🔗 [阅读全文](${url})`
+        } else {
+          const data = await apiClient.note.getList(offset, 1)
+          if (!data.data.length) {
+            return '没有找到日记'
+          }
+
+          const note = data.data[0]
+          const url = await urlBuilder.build(ctx, config, note)
+          const preview = RemoveMarkdown(note.text)
+            .split('\n\n')
+            .slice(0, 3)
+            .join('\n\n')
+            .substring(0, 200)
+
+          return `📔 ${replyPrefix}日记详情：\n\n` +
+            `📝 ${note.title}\n\n` +
+            `${preview}${preview.length >= 200 ? '...' : ''}\n\n` +
+            `🔗 [阅读全文](${url})`
+        }
       } catch (error) {
-        logger.error('获取文章详情失败:', error)
-        return '获取文章详情失败'
+        logger.error('获取详情失败:', error)
+        return '获取详情失败'
       }
     })
-
-  cmd
-    .subcommand('.note <offset>', '获取 Note 详情')
-    .action(async ({ session }, offset = '1') => {
-      try {
-        const offsetNum = parseInt(offset) || 1
-        const data = await apiClient.note.getList(offsetNum, 1)
-        if (!data.data.length) {
-          return '没有找到笔记'
-        }
-        const noteDetail = data.data[0]
-        const url = await urlBuilder.build(ctx, config, noteDetail)
-        return `[${noteDetail.title}](${url})\n\n${RemoveMarkdown(
-          noteDetail.text,
-        )
-          .split('\n\n')
-          .slice(0, 3)
-          .join('\n\n')}\n\n[阅读全文](${url})`
-      } catch (error) {
-        logger.error('获取笔记详情失败:', error)
-        return '获取笔记详情失败'
-      }
-    })
-
-  cmd.subcommand('.stat', '获取 MX Space 统计信息').action(async () => {
-    try {
-      const data = await apiClient.aggregate.getStat()
-      const {
-        callTime,
-        posts,
-        notes,
-        linkApply,
-        recently,
-        says,
-        todayIpAccessCount,
-        todayMaxOnline,
-        todayOnlineTotal,
-        unreadComments,
-        comments,
-        links,
-        online,
-      } = data
-      return (
-        '状态信息：' +
-        '\n\n' +
-        `当前有文章 ${posts} 篇，生活记录 ${notes} 篇，评论 ${comments} 条，友链 ${links} 条，说说 ${says} 条，速记 ${recently} 条。` +
-        '\n' +
-        `未读评论 ${unreadComments} 条，友链申请 ${linkApply} 条。` +
-        '\n' +
-        `今日访问 ${todayIpAccessCount} 次，最高在线 ${todayMaxOnline} 人，总计在线 ${todayOnlineTotal} 人。` +
-        '\n' +
-        `调用次数 ${callTime} 次，当前在线 ${online} 人。`
-      )
-    } catch (error) {
-      logger.error('获取统计信息失败:', error)
-      return '获取统计信息失败'
-    }
-  })
 
   logger.info('MX Space 命令已注册')
 }
@@ -300,11 +435,18 @@ async function sendToChannels(
   message: string,
   logger: any,
 ) {
-  for (const channelId of channels) {
+  if (!channels.length) return
+
+  const tasks = channels.map(async (channelId) => {
     try {
-      await ctx.broadcast([channelId], message)
+      const bot = ctx.bots.find(bot => bot.selfId)
+      if (bot) {
+        await bot.sendMessage(channelId, message)
+      }
     } catch (error) {
       logger.error(`发送消息到频道 ${channelId} 失败:`, error)
     }
-  }
+  })
+
+  await Promise.allSettled(tasks)
 }

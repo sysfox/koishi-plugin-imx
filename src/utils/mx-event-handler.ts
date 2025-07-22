@@ -1,56 +1,53 @@
-import { Context } from 'koishi'
-import { inspect } from 'util'
+import { Context, h } from 'koishi'
 import dayjs from 'dayjs'
 import RemoveMarkdown from 'remove-markdown'
-import {
-  BusinessEvents,
-  type IActivityLike,
-} from '@mx-space/webhook'
-import { createHandler } from '@mx-space/webhook'
-import { Config } from './mx-api'
+import type { CommentModel, LinkModel, NoteModel, PageModel, PostModel } from '@mx-space/api-client'
+import { CollectionRefTypes, LinkState } from '@mx-space/api-client'
 import { getApiClient, getMxSpaceAggregateData } from './mx-api'
 import { urlBuilder } from './mx-url-builder'
-import {
-  CollectionRefTypes,
-  CommentModel,
-  LinkModel,
-  LinkState,
-  NoteModel,
-  PageModel,
-  PostModel,
-  RecentlyModel,
-  SayModel,
-} from '../types/mx-space/api'
 
-export function setupWebhook(ctx: Context, config: Config) {
-  const logger = ctx.logger('mx-space-webhook')
-  
-  if (!config.webhookSecret) {
-    logger.warn('Webhook secret not configured, skipping webhook setup')
-    return
-  }
-  
-  // TODO: 实现 webhook 功能，需要使用正确的 Koishi 路由方式
-  logger.warn('Webhook functionality temporarily disabled - needs proper Koishi routing implementation')
+// MX Space 事件类型
+export enum BusinessEvents {
+  POST_CREATE = 'post_create',
+  POST_UPDATE = 'post_update',
+  NOTE_CREATE = 'note_create',
+  COMMENT_CREATE = 'comment_create',
+  LINK_APPLY = 'link_apply',
+  SAY_CREATE = 'say_create',
+  RECENTLY_CREATE = 'recently_create',
 }
 
-const handleEvent =
-  (ctx: Context, config: Config) =>
-  async (type: BusinessEvents, payload: any) => {
-    const logger = ctx.logger('mx-space-event')
-    logger.debug(type, inspect(payload))
+export async function handleMxSpaceEvent(
+  ctx: Context,
+  config: any,
+  type: string,
+  payload: any,
+  logger: any,
+) {
+  logger.info(`处理 MX Space 事件: ${type}`)
 
+  try {
     const aggregateData = await getMxSpaceAggregateData(ctx, config)
     const owner = aggregateData.user
+    const watchChannels = config.webhook?.watchChannels || []
 
-    const sendToChannels = async (message: string, channels: string[]) => {
-      for (const channelId of channels) {
+    if (!watchChannels.length) {
+      logger.warn('没有配置监听频道，跳过事件处理')
+      return
+    }
+
+    const sendToChannels = async (message: string | h[]) => {
+      const tasks = watchChannels.map(async (channelId: string) => {
         try {
-          await ctx.broadcast([channelId], message)
+          const bot = ctx.bots.find(bot => bot.selfId)
+          if (bot) {
+            await bot.sendMessage(channelId, message)
+          }
         } catch (error) {
           logger.error(`发送消息到频道 ${channelId} 失败:`, error)
         }
-      }
+      })
+      await Promise.allSettled(tasks)
     }
 
     switch (type) {
@@ -61,93 +58,99 @@ const handleEvent =
         const { title, category, id, summary, created } = payload as PostModel
 
         if (type === BusinessEvents.POST_UPDATE) {
+          // 只有创建90天内的文章更新才发送通知
           const createdDate = dayjs(created)
           const now = dayjs()
           const diff = now.diff(createdDate, 'day')
-          if (diff < 90) {
+          if (diff >= 90) {
             return
           }
         }
+
         if (!category) {
           logger.error(`category not found, post id: ${id}`)
           return
         }
 
         const url = await urlBuilder.build(ctx, config, payload as PostModel)
-        const message = `${owner.name} ${publishDescription}: ${title}\n\n${
+        const message = `📚 ${owner.name} ${publishDescription}: ${title}\n\n${
           summary ? `${summary}\n\n` : ''
-        }\n前往阅读：${url}`
-        await sendToChannels(message, config.watchGroupIds || [])
+        }🔗 前往阅读：${url}`
 
+        await sendToChannels(message)
         return
       }
-      case BusinessEvents.NOTE_CREATE: {
-        const publishDescription = '发布了新生活观察日记'
-        const { title, text, mood, weather, images, hide, password } =
-          payload as NoteModel
-        const isSecret = checkNoteIsSecret(payload as NoteModel)
 
+      case BusinessEvents.NOTE_CREATE: {
+        const publishDescription = '发布了新的日记'
+        const { title, text, mood, weather, images, hide, password } = payload as NoteModel
+        
+        // 检查是否为隐私内容
+        const isSecret = checkNoteIsSecret(payload as NoteModel)
         if (hide || password || isSecret) {
           return
         }
-        const simplePreview = getSimplePreview(text)
 
-        const status = [mood ? `心情: ${mood}` : '']
-          .concat(weather ? `天气: ${weather}` : '')
+        const simplePreview = getSimplePreview(text)
+        const status = [mood ? `心情: ${mood}` : '', weather ? `天气: ${weather}` : '']
           .filter(Boolean)
           .join('\t')
-        const message = `${owner.name} ${publishDescription}: ${title}\n${
-          status ? `\n${status}\n\n` : '\n'
-        }${simplePreview}\n\n前往阅读：${await urlBuilder.build(
-          ctx,
-          config,
-          payload as NoteModel,
-        )}`
 
+        const url = await urlBuilder.build(ctx, config, payload as NoteModel)
+        let message = `📔 ${owner.name} ${publishDescription}: ${title}\n${
+          status ? `\n${status}\n\n` : '\n'
+        }${simplePreview}\n\n🔗 前往阅读：${url}`
+
+        // 如果有图片，发送图片消息
         if (Array.isArray(images) && images.length > 0) {
-          // TODO: send image
-          await sendToChannels(message, config.watchGroupIds || [])
+          const imageMessages = images.map(img => h.image(img.src))
+          await sendToChannels([h.text(message), ...imageMessages])
         } else {
-          await sendToChannels(message, config.watchGroupIds || [])
+          await sendToChannels(message)
         }
 
         return
       }
 
       case BusinessEvents.LINK_APPLY: {
-        const { name, url, description, state } = payload as LinkModel
+        const { avatar, name, url, description, state } = payload as LinkModel
         if (state !== LinkState.Audit) {
           return
         }
 
-        const message =
-          `有新的友链申请了耶！\n` + `${name}\n${url}\n\n` + `${description}`
+        let message = `🔗 有新的友链申请！\n\n` +
+          `📝 名称: ${name}\n` +
+          `🌐 链接: ${url}\n` +
+          `📄 描述: ${description}`
 
-        await sendToChannels(message, config.watchGroupIds || [])
+        if (avatar) {
+          await sendToChannels([h.image(avatar), h.text(message)])
+        } else {
+          await sendToChannels(message)
+        }
         return
       }
+
       case BusinessEvents.COMMENT_CREATE: {
-        const apiClient = getApiClient(ctx, config)
-        const { author, text, refType, parent, isWhispers } =
-          payload as CommentModel
+        const { author, text, refType, parent, id, isWhispers } = payload as CommentModel
         const siteTitle = aggregateData.seo.title
+
         if (isWhispers) {
-          await sendToChannels(
-            `「${siteTitle}」嘘，有人说了一句悄悄话。是什么呢`,
-            config.watchGroupIds || [],
-          )
+          await sendToChannels(`🤫 「${siteTitle}」嘘，有人说了一句悄悄话...`)
+          return
         }
 
+        // 检查父评论是否为悄悄话
         const parentIsWhispers = (() => {
           const walk: (parent: any) => boolean = (parent) => {
-            if (!parent || typeof parent == 'string') {
+            if (!parent || typeof parent === 'string') {
               return false
             }
             return parent.isWhispers || walk(parent?.parent)
           }
-
           return walk(parent)
         })()
+
         if (parentIsWhispers) {
           logger.warn('[comment]: parent comment is whispers, ignore')
           return
@@ -156,99 +159,75 @@ const handleEvent =
         const refId = payload.ref?.id || payload.ref?._id || payload.ref
         let refModel: PostModel | NoteModel | PageModel | null = null
 
-        switch (refType) {
-          case CollectionRefTypes.Post: {
-            refModel = await apiClient.post.getPost(refId)
-            break
+        try {
+          const apiClient = getApiClient(ctx, config)
+          switch (refType) {
+            case CollectionRefTypes.Post: {
+              refModel = await apiClient.post.getPost(refId)
+              break
+            }
+            case CollectionRefTypes.Note: {
+              refModel = await apiClient.note.getNoteById(refId as string)
+              break
+            }
+            case CollectionRefTypes.Page: {
+              refModel = await apiClient.page.getById(refId)
+              break
+            }
           }
-
-          case CollectionRefTypes.Note: {
-            refModel = await apiClient.note.getNoteById(refId as string)
-
-            break
-          }
-          case CollectionRefTypes.Page: {
-            refModel = await apiClient.page.getById(refId)
-            break
-          }
+        } catch (error) {
+          logger.error(`[comment]: 获取引用内容失败, refId: ${refId}`, error)
+          return
         }
 
         if (!refModel) {
           logger.error(`[comment]: ref model not found, refId: ${refId}`)
           return
         }
+
         const isMaster = author === owner.name || author === owner.username
         let message: string
+
         if (isMaster && !parent) {
-          message = `${author} 在「${
-            refModel.title
-          }」发表之后的 ${dayjs(refModel.created).fromNow()}又说：${text}`
+          const timeAgo = dayjs(refModel.created).fromNow()
+          message = `💬 ${author} 在「${refModel.title}」发表之后的 ${timeAgo}又说：\n\n${text}`
         } else {
-          message = `${author} 在「${refModel.title}」发表了评论：${text}`
+          message = `💬 ${author} 在「${refModel.title}」发表了评论：\n\n${text}`
         }
 
-        const url = await urlBuilder.build(ctx, config, refModel)
-
-        if (!isWhispers) {
-          await sendToChannels(
-            `${RemoveMarkdown(message)}\n\n查看: ${url}`,
-            config.watchGroupIds || [],
-          )
-        }
-        return
-      }
-      case BusinessEvents.SAY_CREATE: {
-        const { author, source, text } = payload as SayModel
-
-        const message =
-          `${owner.name} 发布一条说说：\n` +
-          `${text}\n${source || author ? `来自: ${source || author}` : ''}`
-        await sendToChannels(message, config.watchGroupIds || [])
-
-        return
-      }
-      case BusinessEvents.RECENTLY_CREATE: {
-        const { content } = payload as RecentlyModel
-
-        const message = `${owner.name} 发布一条动态说：\n${content}`
-        await sendToChannels(message, config.watchGroupIds || [])
-
+        await sendToChannels(message)
         return
       }
 
-      case BusinessEvents.ACTIVITY_LIKE: {
-        const {
-          ref: { id, title },
-          reader,
-        } = payload as IActivityLike
-        const apiClient = getApiClient(ctx, config)
-        const refModelUrl = await apiClient.proxy
-          .helper('url-builder')(id)
-          .get()
-          .then((res: any) => res.data)
-
-        await sendToChannels(
-          (reader
-            ? `${reader.name} 点赞了「${title}」\n`
-            : `「${title}」有人点赞了哦！\n`) + `\n查看: ${refModelUrl}`,
-          config.watchGroupIds || [],
-        )
-
-        return
+      default: {
+        logger.info(`未处理的事件类型: ${type}`)
       }
     }
+  } catch (error) {
+    logger.error('处理 MX Space 事件失败:', error)
   }
-
-const getSimplePreview = (text: string) => {
-  const rawText = RemoveMarkdown(text) as string
-  return rawText.length > 200 ? `${rawText.slice(0, 200)}...` : rawText
 }
 
-function checkNoteIsSecret(note: NoteModel) {
-  if (!note.publicAt) {
-    return false
-  }
-  const isSecret = dayjs(note.publicAt).isAfter(new Date())
+function checkNoteIsSecret(note: NoteModel): boolean {
+  // 检查是否包含敏感关键词
+  const sensitiveKeywords = ['密码', '私密', '秘密', '不公开']
+  const text = note.text?.toLowerCase() || ''
+  const title = note.title?.toLowerCase() || ''
+  
+  return sensitiveKeywords.some(keyword => 
+    text.includes(keyword) || title.includes(keyword)
+  )
+}
 
-  return isSecret
+function getSimplePreview(text: string): string {
+  if (!text) return ''
+  
+  const cleaned = RemoveMarkdown(text)
+  const preview = cleaned
+    .split('\n\n')
+    .slice(0, 3)
+    .join('\n\n')
+    .substring(0, 200)
+  
+  return preview + (preview.length >= 200 ? '...' : '')
 }
