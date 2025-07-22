@@ -9,13 +9,13 @@ import { sendMessage } from './broadcast'
 
 // MX Space 事件类型
 export enum BusinessEvents {
-  POST_CREATE = 'post_create',
-  POST_UPDATE = 'post_update',
-  NOTE_CREATE = 'note_create',
-  COMMENT_CREATE = 'comment_create',
-  LINK_APPLY = 'link_apply',
-  SAY_CREATE = 'say_create',
-  RECENTLY_CREATE = 'recently_create',
+  POST_CREATE = 'POST_CREATE',
+  POST_UPDATE = 'POST_UPDATE',
+  NOTE_CREATE = 'NOTE_CREATE',
+  COMMENT_CREATE = 'COMMENT_CREATE',
+  LINK_APPLY = 'LINK_APPLY',
+  SAY_CREATE = 'SAY_CREATE',
+  RECENTLY_CREATE = 'RECENTLY_CREATE',
 }
 
 export async function handleMxSpaceEvent(
