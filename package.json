@@ -67,7 +67,7 @@
     "@types/node": "^22.16.5",
     "@types/randomcolor": "^0.5.9",
     "@types/remove-markdown": "^0.3.4",
-    "@types/sanitize-html": "^2.13.0",
+    "@types/sanitize-html": "^2.16.0",
     "koishi": "^4.18.8",
     "typescript": "^5.8.3"
   }

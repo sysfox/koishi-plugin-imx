@@ -113,28 +113,82 @@ export function apply(ctx: Context, config: Config) {
 }
 
 function setupWebhook(ctx: Context, config: Config, logger: any) {
-  if (!config.webhook?.secret || !ctx.server) return
+  if (!config.webhook?.secret || !ctx.server) {
+    logger.warn('Webhook 配置不完整或 server 插件未启用')
+    return
+  }
 
   const webhookPath = config.webhook.path || '/mx-space/webhook'
   
   ctx.server.post(webhookPath, async (koaCtx: any) => {
     try {
+      logger.debug('收到 webhook 请求:', {
+        method: koaCtx.method,
+        url: koaCtx.url,
+        headers: koaCtx.headers,
+        body: koaCtx.request.body
+      })
+
       const body = koaCtx.request.body as any
       const signature = koaCtx.request.headers['x-hub-signature-256'] as string
       
-      // 简单的签名验证（生产环境应该使用更安全的验证方式）
-      if (!body.type || !body.data) {
+      // 检查请求体是否存在
+      if (!body) {
+        logger.warn('Webhook 请求体为空')
         koaCtx.status = 400
+        koaCtx.body = { error: 'Request body is empty' }
         return
       }
+
+      // 验证签名
+      if (config.webhook?.secret && signature) {
+        const crypto = await import('crypto')
+        const payload = JSON.stringify(body)
+        const hmac = crypto.createHmac('sha256', config.webhook.secret)
+        hmac.update(payload)
+        const expectedSignature = 'sha256=' + hmac.digest('hex')
+        
+        logger.debug('签名验证:', {
+          received: signature,
+          expected: expectedSignature
+        })
+        
+        if (signature !== expectedSignature) {
+          logger.warn('Webhook 签名验证失败')
+          koaCtx.status = 401
+          koaCtx.body = { error: 'Invalid signature' }
+          return
+        }
+      } else if (config.webhook?.secret && !signature) {
+        logger.warn('配置了签名但请求中没有签名头')
+        koaCtx.status = 401
+        koaCtx.body = { error: 'Missing signature' }
+        return
+      }
+      
+      // 检查请求体格式
+      if (!body.type || !body.data) {
+        logger.warn('Webhook 请求体格式错误:', body)
+        koaCtx.status = 400
+        koaCtx.body = { 
+          error: 'Invalid webhook payload', 
+          details: 'Missing required fields: type or data',
+          received: body
+        }
+        return
+      }
+
+      logger.info(`处理 MX Space 事件: ${body.type}`)
 
       // 处理事件
       await handleMxSpaceEvent(ctx, config, body.type, body.data, logger)
       
       koaCtx.status = 200
-    } catch (error) {
+      koaCtx.body = { message: 'Webhook processed successfully' }
+    } catch (error: any) {
       logger.error('处理 MX Space webhook 失败:', error)
       koaCtx.status = 500
+      koaCtx.body = { error: 'Internal server error', details: error.message }
     }
   })
 

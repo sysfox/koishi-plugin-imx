@@ -1,0 +1,34 @@
+# Koishi 配置示例 - koishi.yml
+plugins:
+  imx:
+    mxSpace:
+      baseUrl: "https://your-mx-space-domain.com"  # 你的 mx-space 站点地址
+      token: "your-api-token"  # mx-space API token
+      webhook:
+        secret: "your-webhook-secret"  # webhook 密钥，需要与 mx-space 设置的一致
+        path: "/mx-space/webhook"  # webhook 接收路径
+        watchChannels: 
+          - "channel-id-1"  # 要接收 webhook 消息的频道ID
+          - "channel-id-2"
+      greeting:
+        enabled: true
+        channels: 
+          - "channel-id-1"
+        morningTime: "0 0 8 * * *"  # 早安时间 (cron格式)
+        eveningTime: "0 0 23 * * *"  # 晚安时间
+      commands:
+        enabled: true
+        replyPrefix: "来自 Mix Space 的"
+      welcomeNewMember:
+        enabled: true
+        channels:
+          - "channel-id-1"
+      commentReply:
+        enabled: true
+        channels:
+          - "channel-id-1"
+
+  # 确保启用了 server 插件
+  server:
+    port: 5140  # Koishi 服务器端口
+    host: "0.0.0.0"
