@@ -36,7 +36,7 @@
   "koishi": {
     "description": {
       "en": "A versatile chatbot plugin for Koishi, integrating multiple functionalities including Bilibili and GitHub.",
-      "zh": "一个多功能的聊天机器人插件，集成了 Bilibili 和 GitHub 等多种功能。"
+      "zh": "一个多功能的聊天机器人插件，集成了 Mix-Space信息推送、Bilibili、 GitHub 等多种功能。"
     },
     "service": {
       "required": [

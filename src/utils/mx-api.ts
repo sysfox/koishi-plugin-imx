@@ -1,6 +1,7 @@
 import { allControllers, createClient } from '@mx-space/api-client'
 import { axiosAdaptor } from '@mx-space/api-client/dist/adaptors/axios'
 import { Context } from 'koishi'
+import { mxSpaceUserAgent } from '../constants'
 
 export interface Config {
   baseUrl?: string
@@ -26,6 +27,7 @@ export function getApiClient(ctx: Context, config: Config) {
     req.headers = {
       ...req.headers,
       authorization: config.token,
+      'user-agent': mxSpaceUserAgent,
       'x-request-id': Math.random().toString(36).slice(2),
     } as any
 

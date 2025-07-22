@@ -42,6 +42,12 @@ export function isBot(username: string): boolean {
 export const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
 /**
+ * MX Space API 专用用户代理（常见浏览器 UA）
+ */
+export const mxSpaceUserAgent =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+
+/**
  * 开发环境检测
  */
 export const isDev = process.env.NODE_ENV === 'development'
