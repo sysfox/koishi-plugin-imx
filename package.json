@@ -55,7 +55,7 @@
     "cron": "^2.4.4",
     "dayjs": "^1.11.13",
     "lodash": "^4.17.21",
-    "marked": "^5.1.2",
+    "marked": "^16.0.0",
     "randomcolor": "^0.6.2",
     "remove-markdown": "^0.5.5",
     "sanitize-html": "^2.17.0",
