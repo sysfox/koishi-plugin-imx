@@ -1,3 +1,5 @@
+import sanitizeHtml from 'sanitize-html'
+
 /**
  * 转义 Markdown 特殊字符
  */
@@ -27,7 +29,8 @@ export function truncateText(text: string, maxLength: number = 200): string {
  * 清理 HTML 标签
  */
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '')
+  // Remove all HTML tags and attributes using sanitize-html
+  return sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} })
 }
 
 /**
