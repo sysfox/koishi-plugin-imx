@@ -414,12 +414,12 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
     .subcommand('.stat', '获取 MX Space 统计信息')
     .action(async ({ session }) => {
       try {
-        const data = await apiClient.aggregate.getStat()
+        const aggregateData = await getMxSpaceAggregateData(ctx, config)
         const {
           posts, notes, comments, links, says, recently,
           todayIpAccessCount, todayMaxOnline, todayOnlineTotal,
           unreadComments, linkApply, callTime, online
-        } = data
+        } = aggregateData.stat
 
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
         return `📊 ${replyPrefix}统计信息：\n\n` +
