@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.2] - 2025-07-22
+
+### ✨ 新增功能
+
+- 🔧 **Axios 错误处理工具**: 新增专门的 axios 错误处理工具，提升 API 请求错误日志的详细性和可读性
+- 🌐 **增强 Webhook 处理**: 支持多种签名格式和事件类型，提升 webhook 处理的兼容性和稳定性
+
+### 🔧 技术改进
+
+- **错误日志优化**: 在 Bilibili、GitHub 和 MX Space 模块中集成新的错误处理工具
+- **API 请求增强**: 改进各模块的 API 请求错误处理逻辑
+- **Webhook 逻辑优化**: 增强 MX Space webhook 处理逻辑，支持更多事件类型
+- **测试工具更新**: 更新 webhook 测试脚本，增加更多测试场景
+
+### 📚 文档更新
+
+- 更新 MX Space webhook 配置文档，添加更多配置示例和说明
+
 ## [2.2.0] - 2025-07-22
 
 ### ✨ 新增功能
