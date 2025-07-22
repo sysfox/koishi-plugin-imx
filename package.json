@@ -57,7 +57,7 @@
     "lodash": "^4.17.21",
     "marked": "^16.0.0",
     "randomcolor": "^0.6.2",
-    "remove-markdown": "^0.5.5",
+    "remove-markdown": "^0.6.0",
     "sanitize-html": "^2.17.0",
     "socket.io-client": "^4.8.1",
     "zod": "^3.25.76"

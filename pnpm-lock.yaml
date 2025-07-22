@@ -45,8 +45,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
       remove-markdown:
-        specifier: ^0.5.5
-        version: 0.5.5
+        specifier: ^0.6.0
+        version: 0.6.2
       sanitize-html:
         specifier: ^2.17.0
         version: 2.17.0
@@ -766,8 +766,8 @@ packages:
   reggol@1.7.1:
     resolution: {integrity: sha512-0Vr1vRYDFnsA14BipkHRn3+4FxlZxQJ4VQG2pFE2obSrR68hTHVbbQzS3/ZAHNb6l/+ThaJrc5BPgrYDM3yNyg==}
 
-  remove-markdown@0.5.5:
-    resolution: {integrity: sha512-lMR8tOtDqazFT6W2bZidoXwkptMdF3pCxpri0AEokHg0sZlC2GdoLqnoaxsEj1o7/BtXV1MKtT3YviA1t7rW7g==}
+  remove-markdown@0.6.2:
+    resolution: {integrity: sha512-EijDXJZbzpGbQBd852ViUzcqgpMujthM+SAEHiWCMcZonRbZ+xViWKLJA/vrwbDwYdxrs1aFDjpBhcGrZoJRGA==}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -1731,7 +1731,7 @@ snapshots:
       object-inspect: 1.13.4
       supports-color: 8.1.1
 
-  remove-markdown@0.5.5: {}
+  remove-markdown@0.6.2: {}
 
   safe-buffer@5.2.1: {}
 
