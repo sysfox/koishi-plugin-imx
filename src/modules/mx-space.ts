@@ -21,6 +21,7 @@ export interface Config {
     secret?: string
     path?: string
     watchChannels?: string[]
+    requireSignature?: boolean
   }
   greeting?: {
     enabled?: boolean
@@ -49,6 +50,7 @@ export const Config: Schema<Config> = Schema.object({
     secret: Schema.string().description('MX Space Webhook Secret').role('secret'),
     path: Schema.string().description('Webhook 路径').default('/mx-space/webhook'),
     watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
+    requireSignature: Schema.boolean().description('是否要求签名验证（禁用可允许健康检查等请求）').default(true),
   }).description('Webhook 配置'),
   greeting: Schema.object({
     enabled: Schema.boolean().description('启用问候功能').default(true),
@@ -85,7 +87,7 @@ export function apply(ctx: Context, config: Config) {
   }
 
   // 设置 Webhook 处理器
-  if (config.webhook?.secret && ctx.server) {
+  if (config.webhook && ctx.server) {
     setupWebhook(ctx, config, logger)
   }
 
@@ -113,12 +115,12 @@ export function apply(ctx: Context, config: Config) {
 }
 
 function setupWebhook(ctx: Context, config: Config, logger: any) {
-  if (!config.webhook?.secret || !ctx.server) {
-    logger.warn('Webhook 配置不完整或 server 插件未启用')
+  if (!ctx.server) {
+    logger.warn('Server 插件未启用，无法设置 webhook')
     return
   }
 
-  const webhookPath = config.webhook.path || '/mx-space/webhook'
+  const webhookPath = config.webhook?.path || '/mx-space/webhook'
   
   ctx.server.post(webhookPath, async (koaCtx: any) => {
     try {
@@ -130,7 +132,8 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
       })
 
       const body = koaCtx.request.body as any
-      const signature = koaCtx.request.headers['x-hub-signature-256'] as string
+      const signature = koaCtx.request.headers['x-hub-signature-256'] as string ||
+                        koaCtx.request.headers['x-webhook-signature256'] as string
       
       // 检查请求体是否存在
       if (!body) {
@@ -140,8 +143,24 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
 
-      // 验证签名
-      if (config.webhook?.secret && signature) {
+      // 检查webhook事件类型
+      const eventType = koaCtx.request.headers['x-webhook-event'] as string
+      
+      // 健康检查等系统事件允许无签名通过
+      const isSystemEvent = ['health_check', 'ping'].includes(eventType)
+      
+      // 检查是否需要签名验证
+      const requireSignature = config.webhook?.requireSignature !== false // 默认为true
+      
+      // 验证签名（系统事件可以跳过）
+      if (requireSignature && config.webhook?.secret && !isSystemEvent) {
+        if (!signature) {
+          logger.warn(`事件 ${eventType} 缺少签名头，但配置要求签名验证`)
+          koaCtx.status = 401
+          koaCtx.body = { error: 'Missing signature' }
+          return
+        }
+
         const crypto = await import('crypto')
         const payload = JSON.stringify(body)
         const hmac = crypto.createHmac('sha256', config.webhook.secret)
@@ -149,25 +168,34 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         const expectedSignature = 'sha256=' + hmac.digest('hex')
         
         logger.debug('签名验证:', {
+          event: eventType,
           received: signature,
           expected: expectedSignature
         })
         
         if (signature !== expectedSignature) {
-          logger.warn('Webhook 签名验证失败')
+          logger.warn(`事件 ${eventType} 签名验证失败`)
           koaCtx.status = 401
           koaCtx.body = { error: 'Invalid signature' }
           return
         }
-      } else if (config.webhook?.secret && !signature) {
-        logger.warn('配置了签名但请求中没有签名头')
-        koaCtx.status = 401
-        koaCtx.body = { error: 'Missing signature' }
-        return
+      } else if (!requireSignature) {
+        logger.debug('签名验证已禁用，跳过签名检查')
+      } else if (isSystemEvent) {
+        logger.debug(`系统事件 ${eventType} 跳过签名验证`)
       }
+
       
-      // 检查请求体格式
+      // 检查标准请求体格式
       if (!body.type || !body.data) {
+        // 如果是健康检查但没有标准格式，也允许通过
+        if (eventType === 'health_check' || Object.keys(body).length === 0) {
+          logger.info('处理健康检查或空载荷请求')
+          koaCtx.status = 200
+          koaCtx.body = { message: 'Health check successful' }
+          return
+        }
+        
         logger.warn('Webhook 请求体格式错误:', body)
         koaCtx.status = 400
         koaCtx.body = { 
@@ -192,7 +220,8 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
     }
   })
 
-  logger.info(`MX Space Webhook 已启动，监听路径: ${webhookPath}`)
+  const signatureStatus = config.webhook?.requireSignature !== false ? '已启用' : '已禁用'
+  logger.info(`MX Space Webhook 已启动，监听路径: ${webhookPath}，签名验证: ${signatureStatus}`)
 }
 
 function setupWelcomeNewMember(ctx: Context, config: Config, logger: any) {
