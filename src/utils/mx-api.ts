@@ -27,7 +27,7 @@ export function getApiClient(ctx: Context, config: Config) {
   axiosAdaptor.default.interceptors.request.use((req) => {
     req.headers = {
       ...req.headers,
-      authorization: config.token,
+      Authorization: config.token,
       'user-agent': mxSpaceUserAgent,
       'x-request-id': Math.random().toString(36).slice(2),
     } as any
