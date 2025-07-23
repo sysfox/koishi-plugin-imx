@@ -413,26 +413,65 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
   cmd
     .subcommand('.stat', '获取 MX Space 统计信息')
     .action(async ({ session }) => {
+      logger.info('开始获取 MX Space 统计信息')
+      
       try {
+        logger.debug('正在调用 apiClient.aggregate.getStat()')
         const data = await apiClient.aggregate.getStat()
+        
+        // 记录原始API响应
+        logger.debug('收到统计信息原始数据:', JSON.stringify(data, null, 2))
+        
+        if (!data) {
+          logger.warn('API返回数据为空')
+          return '获取统计信息失败：API返回数据为空'
+        }
+        
+        // 解构前先记录关键字段是否存在
+        logger.debug('检查关键字段:', {
+          has_posts: !!data.posts,
+          has_notes: !!data.notes,
+          has_comments: !!data.comments,
+          has_links: !!data.links,
+          has_says: !!data.says,
+          has_recently: !!data.recently,
+          has_today_ip_access_count: !!data.today_ip_access_count,
+          has_today_max_online: !!data.today_max_online,
+          has_today_online_total: !!data.today_online_total,
+          has_unread_comments: !!data.unread_comments,
+          has_link_apply: !!data.link_apply,
+          has_call_time: !!data.call_time,
+          has_online: !!data.online
+        })
+        
+        // 安全解构，确保所有字段都有值
         const {
-          posts, 
-          notes, 
-          comments, 
-          links, 
-          says, 
-          recently,
-          today_ip_access_count, 
-          today_max_online, 
-          today_online_total,
-          unread_comments, 
-          link_apply, 
-          call_time, 
-          online
-        } = data
+          posts = 0, 
+          notes = 0, 
+          comments = 0, 
+          links = 0, 
+          says = 0, 
+          recently = 0,
+          today_ip_access_count = 0, 
+          today_max_online = 0, 
+          today_online_total = 0,
+          unread_comments = 0, 
+          link_apply = 0, 
+          call_time = 0, 
+          online = 0
+        } = data || {}
+        
+        // 记录解构后的数据
+        logger.debug('解构后的统计数据:', {
+          posts, notes, comments, links, says, recently,
+          today_ip_access_count, today_max_online, today_online_total,
+          unread_comments, link_apply, call_time, online
+        })
 
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
-        return `📊 ${replyPrefix}统计信息：\n\n` +
+        
+        // 构建响应消息
+        const responseMessage = `📊 ${replyPrefix}统计信息：\n\n` +
           `📝 文章 ${posts || 0} 篇，📔 记录 ${notes || 0} 篇\n` +
           `💬 评论 ${comments || 0} 条，🔗 友链 ${links || 0} 条\n` +
           `💭 说说 ${says || 0} 条，⚡ 速记 ${recently || 0} 条\n\n` +
@@ -440,9 +479,30 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           `📈 今日访问 ${today_ip_access_count || 0} 次，👥 最高在线 ${today_max_online || 0} 人\n` +
           `📊 总计在线 ${today_online_total || 0} 人，🔄 调用 ${call_time || 0} 次\n` +
           `🟢 当前在线 ${online || 0} 人`
-      } catch (error) {
-        logger.error('获取统计信息失败:', error)
-        return '获取统计信息失败'
+        
+        logger.info('统计信息获取成功')
+        return responseMessage
+        
+      } catch (error: any) {
+        // 详细错误记录
+        const simplified = simplifyAxiosError(error, '获取统计信息')
+        logger.error('获取统计信息失败:', {
+          message: simplified.message,
+          stack: error?.stack || '无堆栈信息',
+          errorType: typeof error,
+          isAxiosError: !!error?.isAxiosError
+        })
+        
+        // 如果是网络错误，提供更友好的提示
+        if (error?.isAxiosError) {
+          if (error.code === 'ECONNREFUSED') {
+            return '获取统计信息失败：无法连接到 MX Space API，请检查网络或 API 地址'
+          } else if (error.response) {
+            return `获取统计信息失败：API 返回错误 (${error.response.status})`
+          }
+        }
+        
+        return '获取统计信息失败：' + simplified.message
       }
     })
 
