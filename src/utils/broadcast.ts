@@ -37,11 +37,10 @@ export async function broadcastToAllContacts(
               }
             }
           } catch (error) {
-            logger.debug(`获取群组 ${guild.id} 的频道列表失败:`, error)
+            // Silently handle channel list fetch errors
           }
         }
 
-        // 获取好友列表（私聊）
         try {
           const friends = await bot.getFriendList()
           for (const friend of friends.data) {
@@ -50,14 +49,12 @@ export async function broadcastToAllContacts(
             try {
               await bot.sendPrivateMessage(friend.id, message)
               totalSent++
-              logger.debug(`成功发送私聊消息到 ${friend.nickname || friend.id}`)
             } catch (error) {
               totalFailed++
-              logger.debug(`发送私聊消息到 ${friend.id} 失败:`, error)
             }
           }
         } catch (error) {
-          logger.debug('获取好友列表失败 (可能平台不支持):', error)
+          // Silently handle error for unsupported platforms
         }
 
       } catch (error) {
@@ -71,13 +68,6 @@ export async function broadcastToAllContacts(
   }
 }
 
-/**
- * 根据配置发送消息到指定频道或广播到所有联系人
- * @param ctx Koishi 上下文
- * @param message 要发送的消息
- * @param options 广播选项
- * @param logger 日志记录器
- */
 export async function sendMessage(
   ctx: Context,
   message: string | h[],

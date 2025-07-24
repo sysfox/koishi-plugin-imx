@@ -78,14 +78,12 @@ async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
     )
     
     if (isLive === null) {
-      // 请求失败，跳过此次检查
       continue
     }
     
     const wasLive = liveStatusCache.get(roomId) || false
 
     if (isLive && !wasLive) {
-      // 开播通知
       const roomInfo = await axiosRequestWithLog(
         logger,
         () => getRoomInfo(roomId),

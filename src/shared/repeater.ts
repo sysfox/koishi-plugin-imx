@@ -16,7 +16,6 @@ export const Config: Schema<Config> = Schema.object({
   breakThreshold: Schema.number().description('连续复读多少次后打断').default(12).min(5).max(20),
 })
 
-// 存储每个会话的消息队列
 const sessionToMessageQueue = new Map<string, string[]>()
 
 export function apply(ctx: Context, config: Config = {}) {
@@ -31,7 +30,6 @@ export function apply(ctx: Context, config: Config = {}) {
     const sessionId = `${session.platform}:${session.channelId}`
     const message = session.content
     
-    // 忽略空消息、机器人消息和命令
     if (!message || session.userId === ctx.bots[0]?.selfId || message.startsWith('/')) {
       return next()
     }
@@ -39,13 +37,10 @@ export function apply(ctx: Context, config: Config = {}) {
     const result = checkRepeater(sessionId, message)
     
     if (result === true) {
-      // 根据概率决定是否复读
       if (Math.random() < repeatChance) {
-        logger.debug(`触发复读: ${message}`)
         return session.send(message)
       }
     } else if (result === 'break') {
-      // 打断复读
       const breakMessages = [
         '复读打断！',
         '不要再复读了！',
@@ -55,7 +50,6 @@ export function apply(ctx: Context, config: Config = {}) {
         '够了够了',
       ]
       const randomMessage = breakMessages[Math.floor(Math.random() * breakMessages.length)]
-      logger.debug(`打断复读: ${randomMessage}`)
       return session.send(randomMessage)
     }
     
@@ -77,7 +71,7 @@ function checkRepeater(sessionId: string, message: string): boolean | 'break' {
       messageQueue.push(message)
     }
 
-    const repeatCount = 3 // 这里应该从配置获取，但为了简化先硬编码
+    const repeatCount = 3
     const breakRepeatCount = 12
 
     if (messageQueue.length === repeatCount) {

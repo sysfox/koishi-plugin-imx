@@ -88,33 +88,27 @@ export function apply(ctx: Context, config: Config) {
     return
   }
 
-  // 全局状态存储
   const globalState = {
     toCommentId: null as string | null,
     memoChatId: null as string | null,
   }
 
-  // 设置 Webhook 处理器
   if (config.webhook?.secret && ctx.server) {
     setupWebhook(ctx, config, logger)
   }
 
-  // 设置问候功能
   if (config.greeting?.enabled) {
     setupGreeting(ctx, config, logger)
   }
 
-  // 设置命令
   if (config.commands?.enabled) {
     setupCommands(ctx, config, logger)
   }
 
-  // 设置新成员欢迎
   if (config.welcomeNewMember?.enabled) {
     setupWelcomeNewMember(ctx, config, logger)
   }
 
-  // 设置评论回复功能
   if (config.commentReply?.enabled) {
     setupCommentReply(ctx, config, logger, globalState)
   }
@@ -241,7 +235,6 @@ function setupWelcomeNewMember(ctx: Context, config: Config, logger: any) {
 function setupCommentReply(ctx: Context, config: Config, logger: any, globalState: any) {
   if (!config.commentReply?.channels?.length) return
 
-  // 处理回复消息的中间件
   ctx.middleware(async (session, next) => {
     if (session.type !== 'message' || !session.content) return next()
     
@@ -259,7 +252,6 @@ function setupCommentReply(ctx: Context, config: Config, logger: any, globalStat
 
       await session.send('回复成功！')
       
-      // 清除状态
       globalState.toCommentId = null
       globalState.memoChatId = null
     } catch (error: any) {
@@ -351,7 +343,6 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
   const apiClient = getApiClient(ctx, config)
   const cmd = ctx.command('mx-space', 'MX Space 相关功能')
 
-  // 一言命令
   cmd
     .subcommand('.hitokoto', '获取一言')
     .action(async ({ session }) => {
@@ -365,7 +356,6 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       }
     })
 
-  // 统计信息命令
   cmd
     .subcommand('.stat', '获取 MX Space 统计信息')
     .action(async ({ session }) => {
@@ -421,7 +411,6 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       }
     })
 
-  // 获取最新文章
   cmd
     .subcommand('.posts [page:number]', '获取最新的文章列表')
     .action(async ({ session }, page = 1) => {
@@ -448,7 +437,6 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       }
     })
 
-  // 获取最新日记
   cmd
     .subcommand('.notes [page:number]', '获取最新的日记列表')
     .action(async ({ session }, page = 1) => {
@@ -475,7 +463,6 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       }
     })
 
-  // 获取详情命令
   cmd
     .subcommand('.detail <type> [offset:number]', '获取文章或日记详情')
     .action(async ({ session }, type: string, offset = 1) => {
