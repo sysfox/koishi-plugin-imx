@@ -159,36 +159,24 @@ export const Config: Schema<Config> = Schema.object({
 export function apply(ctx: Context, config: Config) {
   const logger = ctx.logger('imx')
   
-  // 注册 MX Space 模块
   if (config.mxSpace?.baseUrl) {
     ctx.plugin(mxSpace, config.mxSpace)
     logger.info('MX Space 模块已加载')
-  } else {
-    logger.warn('MX Space 模块未配置，跳过加载')
   }
   
-  // 注册 Bilibili 模块
   if (config.bilibili?.enabled) {
     ctx.plugin(bilibili, config.bilibili)
     logger.info('Bilibili 模块已加载')
-  } else {
-    logger.debug('Bilibili 模块未启用')
   }
   
-  // 注册 GitHub 模块
   if (config.github?.enabled) {
     ctx.plugin(github, config.github)
     logger.info('GitHub 模块已加载')
-  } else {
-    logger.debug('GitHub 模块未启用')
   }
   
-  // 注册共享功能
   if (config.shared) {
     ctx.plugin(shared, config.shared)
     logger.info('共享功能模块已加载')
-  } else {
-    logger.debug('共享功能未配置')
   }
   
   logger.info('IMX 插件启动完成')

@@ -132,29 +132,17 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
   
   ctx.server.post(webhookPath, async (koaCtx: any) => {
     try {
-      logger.debug('收到 webhook 请求:', {
-        method: koaCtx.method,
-        url: koaCtx.url,
-        headers: koaCtx.headers,
-        body: koaCtx.request.body
-      })
-
       const body = koaCtx.request.body as any
       const headers = koaCtx.request.headers
       
-      // 兼容多种签名头格式
-      // GitHub: x-hub-signature-256
-      // MX Space: X-Webhook-Signature (SHA1), X-Webhook-Signature256 (SHA256)
       const signature = headers['x-hub-signature-256'] as string || 
                        headers['x-webhook-signature256'] as string ||
                        headers['x-webhook-signature'] as string
       
-      // 获取事件类型和其他 MX Space 专用头
       const eventType = headers['x-webhook-event'] as string
       const webhookId = headers['x-webhook-id'] as string
       const timestamp = headers['x-webhook-timestamp'] as string
       
-      // 检查请求体是否存在
       if (!body) {
         logger.warn('Webhook 请求体为空')
         koaCtx.status = 400
@@ -162,15 +150,12 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
 
-      // 验证签名
       if (config.webhook?.secret && signature) {
         const crypto = await import('crypto')
         const payload = JSON.stringify(body)
         let isValidSignature = false
         
-        // 判断签名算法并验证
         if (signature.startsWith('sha256=') || headers['x-webhook-signature256']) {
-          // SHA256 签名验证
           const hmac = crypto.createHmac('sha256', config.webhook.secret)
           hmac.update(payload)
           const expectedSignature = signature.startsWith('sha256=') 
@@ -178,21 +163,11 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
             : hmac.digest('hex')
           isValidSignature = signature === expectedSignature
         } else if (headers['x-webhook-signature']) {
-          // SHA1 签名验证（MX Space 默认）
           const hmac = crypto.createHmac('sha1', config.webhook.secret)
           hmac.update(payload)
           const expectedSignature = hmac.digest('hex')
           isValidSignature = signature === expectedSignature
         }
-        
-        logger.debug('签名验证:', {
-          received: signature,
-          algorithm: signature.startsWith('sha256=') ? 'SHA256' : (headers['x-webhook-signature256'] ? 'SHA256' : 'SHA1'),
-          isValid: isValidSignature,
-          eventType,
-          webhookId,
-          timestamp
-        })
         
         if (!isValidSignature) {
           logger.warn('Webhook 签名验证失败')
@@ -207,40 +182,25 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
       
-      // 检查请求体格式
-      // 兼容多种格式：
-      // 1. GitHub 格式: { type, data }
-      // 2. MX Space 格式: 直接的事件数据，事件类型在 X-Webhook-Event 头中
       let eventTypeToProcess: string
       let eventData: any
       
       if (eventType) {
-        // MX Space 格式：事件类型在头部，数据在请求体
         eventTypeToProcess = eventType
         eventData = body
       } else if (body.type && body.data) {
-        // GitHub 格式：事件类型和数据都在请求体
         eventTypeToProcess = body.type
         eventData = body.data
       } else {
-        logger.warn('Webhook 请求体格式错误:', body)
+        logger.warn('Webhook 请求体格式错误')
         koaCtx.status = 400
         koaCtx.body = { 
           error: 'Invalid webhook payload', 
-          details: 'Missing required fields: event type or data',
-          received: body,
-          headers: { eventType, webhookId, timestamp }
+          details: 'Missing required fields: event type or data'
         }
         return
       }
 
-      logger.info(`处理 MX Space 事件: ${eventTypeToProcess}`, {
-        webhookId,
-        timestamp,
-        format: eventType ? 'mx-space' : 'github'
-      })
-
-      // 处理事件
       await handleMxSpaceEvent(ctx, config, eventTypeToProcess, eventData, logger)
       
       koaCtx.status = 200
@@ -316,7 +276,6 @@ function setupCommentReply(ctx: Context, config: Config, logger: any, globalStat
 }
 
 function setupGreeting(ctx: Context, config: Config, logger: any) {
-  // 早安定时任务
   const morningJob = new CronJob(
     config.greeting!.morningTime || '0 0 6 * * *',
     async () => {
@@ -347,7 +306,6 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
     'Asia/Shanghai',
   )
 
-  // 晚安定时任务
   const eveningJob = new CronJob(
     config.greeting!.eveningTime || '0 0 22 * * *',
     async () => {
@@ -381,11 +339,9 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
   morningJob.start()
   eveningJob.start()
 
-  // 插件停止时清理定时任务
   ctx.on('dispose', () => {
     morningJob.stop()
     eveningJob.stop()
-    logger.info('问候定时任务已停止')
   })
 
   logger.info('问候功能已启动')
@@ -413,38 +369,13 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
   cmd
     .subcommand('.stat', '获取 MX Space 统计信息')
     .action(async ({ session }) => {
-      logger.info('开始获取 MX Space 统计信息')
-      
       try {
-        logger.debug('正在调用 apiClient.aggregate.getStat()')
         const data = await apiClient.aggregate.getStat()
         
-        // 记录原始API响应
-        logger.debug('收到统计信息原始数据:', JSON.stringify(data, null, 2))
-        
         if (!data) {
-          logger.warn('API返回数据为空')
           return '获取统计信息失败：API返回数据为空'
         }
         
-        // 解构前先记录关键字段是否存在
-        logger.debug('检查关键字段:', {
-          has_posts: !!data.posts,
-          has_notes: !!data.notes,
-          has_comments: !!data.comments,
-          has_links: !!data.links,
-          has_says: !!data.says,
-          has_recently: !!data.recently,
-          has_today_ip_access_count: !!data.today_ip_access_count,
-          has_today_max_online: !!data.today_max_online,
-          has_today_online_total: !!data.today_online_total,
-          has_unread_comments: !!data.unread_comments,
-          has_link_apply: !!data.link_apply,
-          has_call_time: !!data.call_time,
-          has_online: !!data.online
-        })
-        
-        // 安全解构，确保所有字段都有值
         const {
           posts = 0, 
           notes = 0, 
@@ -460,17 +391,9 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           call_time = 0, 
           online = 0
         } = data || {}
-        
-        // 记录解构后的数据
-        logger.debug('解构后的统计数据:', {
-          posts, notes, comments, links, says, recently,
-          today_ip_access_count, today_max_online, today_online_total,
-          unread_comments, link_apply, call_time, online
-        })
 
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
         
-        // 构建响应消息
         const responseMessage = `📊 ${replyPrefix}统计信息：\n\n` +
           `📝 文章 ${posts || 0} 篇，📔 记录 ${notes || 0} 篇\n` +
           `💬 评论 ${comments || 0} 条，🔗 友链 ${links || 0} 条\n` +
@@ -480,20 +403,12 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           `📊 总计在线 ${today_online_total || 0} 人，🔄 调用 ${call_time || 0} 次\n` +
           `🟢 当前在线 ${online || 0} 人`
         
-        logger.info('统计信息获取成功')
         return responseMessage
         
       } catch (error: any) {
-        // 详细错误记录
         const simplified = simplifyAxiosError(error, '获取统计信息')
-        logger.error('获取统计信息失败:', {
-          message: simplified.message,
-          stack: error?.stack || '无堆栈信息',
-          errorType: typeof error,
-          isAxiosError: !!error?.isAxiosError
-        })
+        logger.error('获取统计信息失败:', simplified.message)
         
-        // 如果是网络错误，提供更友好的提示
         if (error?.isAxiosError) {
           if (error.code === 'ECONNREFUSED') {
             return '获取统计信息失败：无法连接到 MX Space API，请检查网络或 API 地址'

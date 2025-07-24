@@ -42,11 +42,9 @@ export function apply(ctx: Context, config: Config) {
   const logger = ctx.logger('github')
   
   if (!config.enabled) {
-    logger.info('GitHub 模块未启用')
     return
   }
 
-  // 注册命令
   ctx.command('github', 'GitHub 相关功能')
   
   ctx.command('github.status', '查看仓库状态')
@@ -73,9 +71,8 @@ export function apply(ctx: Context, config: Config) {
       return statusList.join('\n')
     })
 
-  // 设置 Webhook 支持
   setupWebhook(ctx, config, logger)
-
+  
   logger.info('GitHub 模块已启动')
 }
 
@@ -94,21 +91,13 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
   
   ctx.server.post(webhookPath, async (koaCtx: any) => {
     try {
-      logger.debug('收到 GitHub webhook 请求:', {
-        method: koaCtx.method,
-        url: koaCtx.url,
-        headers: koaCtx.headers
-      })
-
       const body = koaCtx.request.body as any
       const headers = koaCtx.request.headers
       
-      // GitHub webhook 签名验证
       const signature = headers['x-hub-signature-256'] as string
       const event = headers['x-github-event'] as string
       const delivery = headers['x-github-delivery'] as string
       
-      // 检查请求体是否存在
       if (!body) {
         logger.warn('GitHub Webhook 请求体为空')
         koaCtx.status = 400
@@ -116,7 +105,6 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
 
-      // 检查事件类型
       if (!event) {
         logger.warn('缺少 x-github-event 头')
         koaCtx.status = 400
@@ -124,7 +112,6 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
 
-      // 验证 GitHub webhook 签名
       if (config.webhook?.secret && signature) {
         const payload = JSON.stringify(body)
         const hmac = createHmac('sha256', config.webhook.secret)
@@ -137,11 +124,8 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
           koaCtx.body = { error: 'Invalid signature' }
           return
         }
-        
-        logger.debug('GitHub Webhook 签名验证成功')
       }
 
-      // 处理 GitHub 事件
       await handleGitHubEvent(ctx, config, logger, event, body)
       
       koaCtx.status = 200
@@ -158,8 +142,6 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
 }
 
 async function handleGitHubEvent(ctx: Context, config: Config, logger: any, event: string, payload: any) {
-  logger.info(`收到 GitHub 事件: ${event}`)
-  
   let message = ''
   
   try {
@@ -174,12 +156,10 @@ async function handleGitHubEvent(ctx: Context, config: Config, logger: any, even
         message = formatPullRequestEvent(payload as PullRequestPayload)
         break
       default:
-        logger.debug(`未处理的 GitHub 事件类型: ${event}`)
         return
     }
     
     if (message) {
-      // 发送消息到配置的频道
       const watchChannels = config.webhook?.watchChannels || []
       const broadcastToAll = config.webhook?.broadcastToAll || false
       const excludeChannels = config.webhook?.excludeChannels || []

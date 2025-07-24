@@ -29,7 +29,7 @@ export class WebhookHandler {
       try {
         handler(data)
       } catch (error) {
-        console.error(`Error in webhook handler for event ${event}:`, error)
+        // Silently handle errors to avoid verbose logging
       }
     })
   }

@@ -31,7 +31,6 @@ function isNoteModel(model: any): model is NoteModel {
 function buildPath(model: PostModel | NoteModel | PageModel) {
   if (isPostModel(model)) {
     if (!model.category) {
-      console.error('PostModel.category is missing!!!!!')
       return '#'
     }
     return `/posts/${
