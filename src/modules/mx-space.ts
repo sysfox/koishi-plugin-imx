@@ -366,6 +366,11 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           return '获取统计信息失败：API返回数据为空'
         }
         
+        // 先将数据转换为JSON字符串，然后重新解析，确保数据结构正确
+        const jsonString = JSON.stringify(data)
+        const parsedData = JSON.parse(jsonString)
+        
+        // 从解析后的数据中提取各个字段
         const {
           posts = 0, 
           notes = 0, 
@@ -380,7 +385,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           link_apply = 0, 
           call_time = 0, 
           online = 0
-        } = data || {}
+        } = parsedData || {}
 
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
         
