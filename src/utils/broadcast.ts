@@ -18,6 +18,12 @@ export async function broadcastToAllContacts(
 
     for (const bot of ctx.bots) {
       if (!bot.online) continue
+      
+      // Skip Telegram bots for broadcast to all contacts
+      if (bot.platform === 'telegram') {
+        logger.info(`跳过 Telegram 平台的广播: ${bot.platform}:${bot.selfId}`)
+        continue
+      }
 
       try {
         const guilds = await bot.getGuildList()
