@@ -366,11 +366,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           return '获取统计信息失败：API返回数据为空'
         }
         
-        // 先将数据转换为JSON字符串，然后重新解析，确保数据结构正确
-        const jsonString = JSON.stringify(data)
-        const parsedData = JSON.parse(jsonString)
-        
-        // 从解析后的数据中提取各个字段
+        // 从数据中提取各个字段，使用正确的字段名映射
         const {
           posts = 0, 
           notes = 0, 
@@ -378,14 +374,14 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           links = 0, 
           says = 0, 
           recently = 0,
-          today_ip_access_count = 0, 
-          today_max_online = 0, 
-          today_online_total = 0,
-          unread_comments = 0, 
-          link_apply = 0, 
-          call_time = 0, 
+          todayIpAccessCount: today_ip_access_count = 0, 
+          todayMaxOnline: today_max_online = 0, 
+          todayOnlineTotal: today_online_total = 0,
+          unreadComments: unread_comments = 0, 
+          linkApply: link_apply = 0, 
+          callTime: call_time = 0, 
           online = 0
-        } = parsedData || {}
+        } = data || {}
 
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
         
@@ -397,7 +393,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
           `📈 今日访问 ${today_ip_access_count || 0} 次，👥 最高在线 ${today_max_online || 0} 人\n` +
           `📊 总计在线 ${today_online_total || 0} 人，🔄 调用 ${call_time || 0} 次\n` +
           `🟢 当前在线 ${online || 0} 人`
-        
+
         return responseMessage
         
       } catch (error: any) {
