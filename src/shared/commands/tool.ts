@@ -282,8 +282,6 @@ export function apply(ctx: Context, config: Config = {}) {
         return '生成二维码失败'
       }
     })
-
-  logger.info('工具命令已注册')
 }
 
 // RGB 转 HSL 的辅助函数

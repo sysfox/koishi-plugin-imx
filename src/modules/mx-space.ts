@@ -112,8 +112,6 @@ export function apply(ctx: Context, config: Config) {
   if (config.commentReply?.enabled) {
     setupCommentReply(ctx, config, logger, globalState)
   }
-
-  logger.info('MX Space 模块已启动')
 }
 
 function setupWebhook(ctx: Context, config: Config, logger: any) {
@@ -335,8 +333,6 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
     morningJob.stop()
     eveningJob.stop()
   })
-
-  logger.info('问候功能已启动')
 }
 
 function setupCommands(ctx: Context, config: Config, logger: any) {
@@ -516,6 +512,4 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
         return '获取详情失败'
       }
     })
-
-  logger.info('MX Space 命令已注册')
 }

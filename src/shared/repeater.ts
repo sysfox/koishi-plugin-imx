@@ -55,8 +55,6 @@ export function apply(ctx: Context, config: Config = {}) {
     
     return next()
   })
-
-  logger.info(`复读机已启用 - 阈值: ${repeatCount}, 概率: ${repeatChance}, 打断阈值: ${breakRepeatCount}`)
 }
 
 function checkRepeater(sessionId: string, message: string): boolean | 'break' {

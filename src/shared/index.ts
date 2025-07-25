@@ -40,13 +40,11 @@ export function apply(ctx: Context, config: Config = {}) {
   // 注册复读机功能
   if (config.repeater?.enabled) {
     ctx.plugin(repeater, config.repeater)
-    logger.info('复读机功能已启用')
   }
 
   // 注册工具命令
   if (config.tools?.enabled !== false) {
     ctx.plugin(toolCommands, config.tools || {})
-    logger.info('工具命令已启用')
   }
 
   // 错误处理和通知
@@ -67,11 +65,7 @@ export function apply(ctx: Context, config: Config = {}) {
         })
       }
     })
-    
-    logger.info('错误通知功能已启用')
   }
-
-  logger.info('共享功能模块加载完成')
 }
 
 export * from './repeater'

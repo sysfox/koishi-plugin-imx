@@ -72,8 +72,6 @@ export function apply(ctx: Context, config: Config) {
     })
 
   setupWebhook(ctx, config, logger)
-  
-  logger.info('GitHub 模块已启动')
 }
 
 async function getRepoInfo(repo: string) {
@@ -83,7 +81,6 @@ async function getRepoInfo(repo: string) {
 
 function setupWebhook(ctx: Context, config: Config, logger: any) {
   if (!config.webhook?.secret || !ctx.server) {
-    logger.warn('GitHub Webhook 配置不完整或 server 插件未启用')
     return
   }
 
