@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2025-07-25
+
+### Changed
+- refactor: 移除模块启动时的日志记录，简化代码
+
+### Fixed
+- fix: 修复 setupCommands 函数中的数据解析问题，使用正确的字段名映射以确保数据结构正确
+
+
 ## [2.3.0] - 2025-07-25
 
 ### Added
