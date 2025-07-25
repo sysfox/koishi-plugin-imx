@@ -31,22 +31,17 @@ export function apply(ctx: Context, config: Config) {
   const logger = ctx.logger('bilibili')
   
   if (!config.enabled || !config.roomIds?.length) {
-    logger.info('Bilibili 模块未启用或未配置房间ID')
     return
   }
 
-  // 定时检查直播状态
   const interval = setInterval(async () => {
     await checkLiveStatus(ctx, config, logger)
   }, config.checkInterval! * 60 * 1000)
 
-  // 插件停止时清理定时器
   ctx.on('dispose', () => {
     clearInterval(interval)
-    logger.info('Bilibili 监控已停止')
   })
 
-  // 注册命令
   ctx.command('bili.status', '查看直播状态')
     .action(async ({ session }) => {
       if (!config.roomIds?.length) {
@@ -71,7 +66,7 @@ export function apply(ctx: Context, config: Config) {
       return statusList.join('\n')
     })
 
-  logger.info(`Bilibili 直播监控已启动，监控 ${config.roomIds.length} 个房间`)
+  logger.info(`Bilibili 模块已启动，监控 ${config.roomIds.length} 个房间`)
 }
 
 async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
@@ -83,14 +78,12 @@ async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
     )
     
     if (isLive === null) {
-      // 请求失败，跳过此次检查
       continue
     }
     
     const wasLive = liveStatusCache.get(roomId) || false
 
     if (isLive && !wasLive) {
-      // 开播通知
       const roomInfo = await axiosRequestWithLog(
         logger,
         () => getRoomInfo(roomId),
