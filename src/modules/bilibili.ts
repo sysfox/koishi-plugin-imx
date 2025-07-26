@@ -14,6 +14,7 @@ export interface Config {
   checkInterval?: number
   broadcastToAll?: boolean
   excludeChannels?: string[]
+  excludePlatforms?: string[]
 }
 
 export const Config: Schema<Config> = Schema.object({
@@ -23,6 +24,7 @@ export const Config: Schema<Config> = Schema.object({
   checkInterval: Schema.number().description('检查间隔（分钟）').default(5).min(1).max(60),
   broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
   excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+  excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
 })
 
 const liveStatusCache = new Map<number, boolean>()
@@ -96,6 +98,7 @@ async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
           watchChannels: config.watchChannels,
           broadcastToAll: config.broadcastToAll,
           excludeChannels: config.excludeChannels,
+          excludePlatforms: config.excludePlatforms,
         }, logger)
       }
     }
