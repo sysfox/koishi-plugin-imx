@@ -22,7 +22,7 @@ export async function broadcastToAllContacts(
       if (!bot.online) continue
       
       // Skip platforms that are configured to be excluded
-      if (excludePlatforms.includes(bot.platform)) {
+      if (bot.platform && excludePlatforms.includes(bot.platform)) {
         logger.info(`跳过已配置排除的平台: ${bot.platform}:${bot.selfId}`)
         continue
       }
