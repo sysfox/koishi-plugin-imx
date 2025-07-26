@@ -19,6 +19,7 @@ export interface Config {
       watchChannels?: string[]
       broadcastToAll?: boolean
       excludeChannels?: string[]
+      excludePlatforms?: string[]
     }
     greeting?: {
       enabled?: boolean
@@ -27,6 +28,7 @@ export interface Config {
       eveningTime?: string
       broadcastToAll?: boolean
       excludeChannels?: string[]
+      excludePlatforms?: string[]
     }
     commands?: {
       enabled?: boolean
@@ -51,6 +53,7 @@ export interface Config {
       checkInterval?: number
       broadcastToAll?: boolean
       excludeChannels?: string[]
+      excludePlatforms?: string[]
     }
     userAgent?: string
   }
@@ -64,6 +67,7 @@ export interface Config {
       watchChannels?: string[]
       broadcastToAll?: boolean
       excludeChannels?: string[]
+      excludePlatforms?: string[]
     }
   }
   
@@ -94,6 +98,7 @@ export const Config: Schema<Config> = Schema.object({
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
       broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
       excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+      excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
     }).description('Webhook 配置'),
     greeting: Schema.object({
       enabled: Schema.boolean().description('启用问候功能').default(true),
@@ -102,6 +107,7 @@ export const Config: Schema<Config> = Schema.object({
       eveningTime: Schema.string().description('晚安时间 (cron格式)').default('0 0 22 * * *'),
       broadcastToAll: Schema.boolean().description('是否广播问候消息到所有联系人').default(false),
       excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+      excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
     }).description('问候功能配置'),
     commands: Schema.object({
       enabled: Schema.boolean().description('启用命令功能').default(true),
@@ -125,6 +131,7 @@ export const Config: Schema<Config> = Schema.object({
       checkInterval: Schema.number().description('检查间隔（分钟）').default(1).min(1).max(10),
       broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
       excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+      excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
     }).description('直播间监控配置'),
     userAgent: Schema.string().description('User-Agent').default('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
   }).description('Bilibili 配置'),
@@ -137,6 +144,7 @@ export const Config: Schema<Config> = Schema.object({
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
       broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
       excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+      excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
     }).description('GitHub Webhook 配置'),
   }).description('GitHub 配置'),
   

@@ -22,6 +22,7 @@ export interface Config {
     watchChannels?: string[]
     broadcastToAll?: boolean
     excludeChannels?: string[]
+    excludePlatforms?: string[]
   }
 }
 
@@ -35,6 +36,7 @@ export const Config: Schema<Config> = Schema.object({
     watchChannels: Schema.array(Schema.string()).description('推送通知的频道ID列表').default([]),
     broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
     excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+    excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
   }).description('Webhook 配置'),
 })
 
@@ -160,6 +162,7 @@ async function handleGitHubEvent(ctx: Context, config: Config, logger: any, even
       const watchChannels = config.webhook?.watchChannels || []
       const broadcastToAll = config.webhook?.broadcastToAll || false
       const excludeChannels = config.webhook?.excludeChannels || []
+      const excludePlatforms = config.webhook?.excludePlatforms || []
       
       await sendMessage(
         ctx,
@@ -168,6 +171,7 @@ async function handleGitHubEvent(ctx: Context, config: Config, logger: any, even
           watchChannels,
           broadcastToAll,
           excludeChannels,
+          excludePlatforms,
         },
         logger
       )

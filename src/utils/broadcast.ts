@@ -4,12 +4,14 @@ export interface BroadcastOptions {
   watchChannels?: string[]
   broadcastToAll?: boolean
   excludeChannels?: string[]
+  excludePlatforms?: string[]
 }
 
 export async function broadcastToAllContacts(
   ctx: Context,
   message: string | h[],
   excludeChannels: string[] = [],
+  excludePlatforms: string[] = [],
   logger: any,
 ) {
   try {
@@ -19,9 +21,9 @@ export async function broadcastToAllContacts(
     for (const bot of ctx.bots) {
       if (!bot.online) continue
       
-      // Skip Telegram bots for broadcast to all contacts
-      if (bot.platform === 'telegram') {
-        logger.info(`跳过 Telegram 平台的广播: ${bot.platform}:${bot.selfId}`)
+      // Skip platforms that are configured to be excluded
+      if (excludePlatforms.includes(bot.platform)) {
+        logger.info(`跳过已配置排除的平台: ${bot.platform}:${bot.selfId}`)
         continue
       }
 
@@ -80,10 +82,10 @@ export async function sendMessage(
   options: BroadcastOptions,
   logger: any,
 ) {
-  const { watchChannels = [], broadcastToAll = false, excludeChannels = [] } = options
+  const { watchChannels = [], broadcastToAll = false, excludeChannels = [], excludePlatforms = [] } = options
 
   if (broadcastToAll) {
-    await broadcastToAllContacts(ctx, message, excludeChannels, logger)
+    await broadcastToAllContacts(ctx, message, excludeChannels, excludePlatforms, logger)
   } else if (watchChannels.length > 0) {
     const tasks = watchChannels.map(async (channelId: string) => {
       try {

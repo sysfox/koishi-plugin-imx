@@ -33,6 +33,7 @@ export async function handleMxSpaceEvent(
     const watchChannels = config.webhook?.watchChannels || []
     const broadcastToAll = config.webhook?.broadcastToAll || false
     const excludeChannels = config.webhook?.excludeChannels || []
+    const excludePlatforms = config.webhook?.excludePlatforms || []
 
     if (!broadcastToAll && !watchChannels.length) {
       logger.warn('没有配置监听频道且未启用广播到所有联系人，跳过事件处理')
@@ -44,6 +45,7 @@ export async function handleMxSpaceEvent(
         watchChannels,
         broadcastToAll,
         excludeChannels,
+        excludePlatforms,
       }, logger)
     }
 
