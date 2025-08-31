@@ -34,7 +34,7 @@ importers:
         version: 4.3.2
       dayjs:
         specifier: ^1.11.13
-        version: 1.11.13
+        version: 1.11.18
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -365,8 +365,8 @@ packages:
     resolution: {integrity: sha512-JxBBnf5zRz+NhW9XcP16gwUKAKIimy2G0QCCQu8kk5XwM4aCGwMt+nntouAfXF9A57965XzB6hitBlJAz5Ts6w==}
     engines: {node: '>=18.x'}
 
-  dayjs@1.11.13:
-    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
+  dayjs@1.11.18:
+    resolution: {integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==}
 
   debug@4.3.7:
     resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
@@ -1299,7 +1299,7 @@ snapshots:
       '@types/luxon': 3.6.2
       luxon: 3.7.1
 
-  dayjs@1.11.13: {}
+  dayjs@1.11.18: {}
 
   debug@4.3.7:
     dependencies:
