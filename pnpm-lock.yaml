@@ -40,7 +40,7 @@ importers:
         version: 4.17.23
       marked:
         specifier: ^16.0.0
-        version: 16.1.1
+        version: 16.4.2
       randomcolor:
         specifier: ^0.6.2
         version: 0.6.2
@@ -641,8 +641,8 @@ packages:
     resolution: {integrity: sha512-RkRWjA926cTvz5rAb1BqyWkKbbjzCGchDUIKMCUvNi17j6f6j8uHGDV82Aqcqtzd+icoYpELmG3ksgGiFNNcNg==}
     engines: {node: '>=12'}
 
-  marked@16.1.1:
-    resolution: {integrity: sha512-ij/2lXfCRT71L6u0M29tJPhP0bM5shLL3u5BePhFwPELj2blMJ6GDtD7PfJhRLhJ/c2UwrK17ySVcDzy2YHjHQ==}
+  marked@16.4.2:
+    resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -1612,7 +1612,7 @@ snapshots:
 
   luxon@3.7.1: {}
 
-  marked@16.1.1: {}
+  marked@16.4.2: {}
 
   math-intrinsics@1.1.0: {}
 
