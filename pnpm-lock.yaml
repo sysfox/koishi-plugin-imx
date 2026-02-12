@@ -37,7 +37,7 @@ importers:
         version: 1.11.18
       lodash:
         specifier: ^4.17.21
-        version: 4.17.21
+        version: 4.17.23
       marked:
         specifier: ^16.0.0
         version: 16.1.1
@@ -610,6 +610,7 @@ packages:
   keygrip@1.1.0:
     resolution: {integrity: sha512-iYSchDJ+liQ8iwbSI2QqsQOvqv58eJCEanyJPJi+Khyu8smkcKSFUCbPwzFcL7YVtZ6eONjqRX/38caJ7QjRAQ==}
     engines: {node: '>= 0.6'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
@@ -633,8 +634,8 @@ packages:
     resolution: {integrity: sha512-+bTUCy9bktd1NfHhx+D4k7K65ZTg0XjnJXkdsxBxpM5/VbX+ZPPKhV79G9AO58VmMGbFd0rewWPaaH05Zx/HAg==}
     hasBin: true
 
-  lodash@4.17.21:
-    resolution: {integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==}
+  lodash@4.17.23:
+    resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
   luxon@3.7.1:
     resolution: {integrity: sha512-RkRWjA926cTvz5rAb1BqyWkKbbjzCGchDUIKMCUvNi17j6f6j8uHGDV82Aqcqtzd+icoYpELmG3ksgGiFNNcNg==}
@@ -1607,7 +1608,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  lodash@4.17.21: {}
+  lodash@4.17.23: {}
 
   luxon@3.7.1: {}
 
