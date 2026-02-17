@@ -1,5 +1,6 @@
 import { allControllers, createClient } from '@mx-space/api-client'
 import { axiosAdaptor } from '@mx-space/api-client/dist/adaptors/axios'
+import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { Context } from 'koishi'
 import { mxSpaceUserAgent } from '../constants'
 import { logSimplifiedError } from './axios-error'
@@ -24,7 +25,7 @@ export function getApiClient(ctx: Context, config: Config) {
   
   const logger = ctx.logger('mx-space-api')
 
-  axiosAdaptor.default.interceptors.request.use((req) => {
+  axiosAdaptor.default.interceptors.request.use((req: InternalAxiosRequestConfig) => {
     req.headers = {
       ...req.headers,
       'Authorization': config.token,
@@ -35,10 +36,10 @@ export function getApiClient(ctx: Context, config: Config) {
     return req
   })
   axiosAdaptor.default.interceptors.response.use(
-    (res) => {
+    (res: AxiosResponse) => {
       return res
     },
-    (err) => {
+    (err: AxiosError) => {
       const res = err.response
       if (!res) {
         // 网络错误等，记录简化日志

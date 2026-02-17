@@ -82,10 +82,11 @@ export async function handleMxSpaceEvent(
 
       case BusinessEvents.NOTE_CREATE: {
         const publishDescription = '发布了新的日记'
-        const { title, text, mood, weather, images, hide, password } = payload as NoteModel
+        const note = payload as NoteModel & { hide?: boolean; password?: string }
+        const { title, text, mood, weather, images, hide, password } = note
         
         // 检查是否为隐私内容
-        const isSecret = checkNoteIsSecret(payload as NoteModel)
+        const isSecret = checkNoteIsSecret(note)
         if (hide || password || isSecret) {
           return
         }
