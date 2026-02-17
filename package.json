@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@koishijs/plugin-server": "^3.2.7",
-    "@mx-space/api-client": "^1.21.2",
+    "@mx-space/api-client": "^2.0.0",
     "@mx-space/webhook": "^0.5.0",
     "@tanstack/query-core": "^5.90.20",
     "axios": "^1.13.5",
