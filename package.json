@@ -1,8 +1,8 @@
 {
   "name": "koishi-plugin-imx",
   "description": "Mix-Space Bot for Koishi - 集成多种功能的聊天机器人插件",
-  "version": "2.3.2",
-  "packageManager": "pnpm@latest",
+  "version": "2.4.0",
+  "packageManager": "pnpm@9.1.0",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
