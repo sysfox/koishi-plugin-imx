@@ -16,8 +16,8 @@ importers:
         specifier: ^3.2.9
         version: 3.2.9(cordis@3.18.1)(koishi@4.18.11(@cordisjs/plugin-http@0.6.3(cordis@3.18.1))(cordis@3.18.1)(supports-color@8.1.1))(supports-color@8.1.1)
       '@mx-space/api-client':
-        specifier: ^2.4.2
-        version: 2.4.2
+        specifier: ^5.8.0
+        version: 5.8.0
       '@mx-space/webhook':
         specifier: ^1.0.0
         version: 1.0.0
@@ -161,8 +161,8 @@ packages:
   '@koishijs/utils@7.3.2':
     resolution: {integrity: sha512-x9kEB/nM6l+Uqtnaqqf/FyuOxcT7snp+zu0oTEgV8Z7aZ7eBfuf3Ac1CTAlaiyGPW1aOgXMUg7WL44yVIfRlOw==}
 
-  '@mx-space/api-client@2.4.2':
-    resolution: {integrity: sha512-ccqYjEo9jNmqlLaueURALPMpoG4+4vYMTy03ApO19s802ZtHjVctyBzso5zLFvxTedFTqgk1a3AFpWc7ikjDGg==}
+  '@mx-space/api-client@5.8.0':
+    resolution: {integrity: sha512-Sw+CHt8dwlLYL84XtAYnFYMiOoLvFvAmU7svo65tEWgpgVT1rZ3XOKMDStGkc+/oJhDKHp2kO/l39c+Os755Yg==}
     engines: {node: '>=22'}
 
   '@mx-space/webhook@1.0.0':
@@ -1096,7 +1096,7 @@ snapshots:
       cosmokit: 1.8.1
       inaba: 1.1.1
 
-  '@mx-space/api-client@2.4.2': {}
+  '@mx-space/api-client@5.8.0': {}
 
   '@mx-space/webhook@1.0.0':
     dependencies:
