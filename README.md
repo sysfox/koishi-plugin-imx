@@ -23,7 +23,6 @@
 ### 🐙 GitHub 集成
 - **Webhook 支持**: 监听 GitHub 仓库的各种事件
 - **多事件类型**: 支持 Push、Issue、Pull Request、工作流等事件
-- **状态查询**: `github.status` 命令查看仓库状态
 - **安全验证**: 支持 webhook 签名验证
 
 ### 🛠️ 实用工具命令
@@ -35,7 +34,7 @@
 - **UUID 生成**: `tools.uuid` - 生成标准 UUID
 - **颜色生成**: `tools.color` - 生成随机颜色及其各种格式
 - **一言**: `tools.hitokoto` 或 `一言` - 获取随机一言
-- **短链接**: `tools.shorturl <url>` - 生成短链接
+- **短链接**: `tools.shorturl <url>` - 生成短链接（需配置短链接服务 API Key，未配置时仅提示暂不可用）
 - **二维码**: `tools.qrcode <text>` - 生成二维码图片
 
 ### 🔄 智能复读机
@@ -103,9 +102,9 @@ plugins:
     # Bilibili 配置
     bilibili:
       enabled: true
-      roomIds: [123456, 789012]  # 监控的直播间ID列表
+      roomIds: [123456, 789012]  # 监控的直播间ID列表（兼容旧字段 roomId：单个直播间ID）
       watchChannels: ["channel-id"]
-      checkInterval: 5  # 检查间隔（分钟）
+      checkInterval: 5  # 检查间隔（分钟，1-60，默认 5）
       broadcastToAll: false
       excludeChannels: []
     
@@ -126,9 +125,9 @@ plugins:
         channels: ["admin-channel-id"]
       repeater:
         enabled: true
-        threshold: 3  # 触发复读的次数
-        chance: 0.5   # 复读概率
-        breakThreshold: 12  # 打断阈值
+        threshold: 3  # 触发复读的次数（2-10，默认 3）
+        chance: 0.5   # 复读概率（0-1，默认 0.5）
+        breakThreshold: 12  # 连续复读多少次后打断（5-20，默认 12）
       tools:
         enabled: true
 ```
@@ -154,9 +153,9 @@ plugins:
 ### Bilibili 配置
 
 - `enabled`: 是否启用 Bilibili 监控
-- `roomIds`: 要监控的直播间ID列表（支持多个）
+- `roomIds`: 要监控的直播间ID列表（支持多个；兼容旧字段 `roomId`：单个直播间ID）
 - `watchChannels`: 推送通知的频道ID列表
-- `checkInterval`: 检查间隔（分钟，1-60）
+- `checkInterval`: 检查间隔（分钟，1-60，默认 5）
 - `broadcastToAll`: 开播时是否广播到所有联系人
 - `excludeChannels`: 广播时排除的频道列表
 
@@ -209,7 +208,6 @@ tools.qrcode hello world      # 生成二维码
 
 ```bash
 bili.status                   # 查看直播状态
-github.status                 # 查看仓库状态
 ```
 
 ## 使用示例
@@ -252,10 +250,9 @@ tools.color
 支持监控多个直播间，当主播开播时自动推送：
 
 ```text
-🔴 直播开始了！
-🎯 房间号：123456
-👤 主播：某某主播
-🎬 标题：今天直播XXX内容
+🔴某某主播 开播了！
+📺今天直播XXX内容
+👥 观看人数: 1234
 🔗 链接：https://live.bilibili.com/123456
 ```
 
@@ -323,7 +320,7 @@ A: 请检查：
 
 1. 直播间ID是否正确
 2. 网络连接是否正常
-3. 检查间隔设置是否合理（建议 1-10 分钟）
+3. 检查间隔设置是否合理（1-60 分钟，默认 5 分钟）
 
 ### Q: MX Space Webhook 没有收到推送？
 
