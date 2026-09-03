@@ -447,7 +447,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
         const webUrl = aggregateData.url.webUrl
 
         const articles = data.data.map((post: any) => {
-          const timeAgo = dayjs(post.created).fromNow()
+          const timeAgo = dayjs(post.createdAt ?? post.created).fromNow()
           const url = `${webUrl}/posts/${post.category.slug}/${post.slug}`
           return `${timeAgo} · [${post.title}](${url})`
         }).join('\n')
@@ -474,7 +474,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
         const webUrl = aggregateData.url.webUrl
 
         const notes = data.data.map((note: any) => {
-          const timeAgo = dayjs(note.created).fromNow()
+          const timeAgo = dayjs(note.createdAt ?? note.created).fromNow()
           const url = `${webUrl}/notes/${note.nid}`
           return `${timeAgo} · [${note.title}](${url})`
         }).join('\n')

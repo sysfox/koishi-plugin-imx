@@ -54,7 +54,8 @@ export async function handleMxSpaceEvent(
       case BusinessEvents.POST_UPDATE: {
         const isNew = type === BusinessEvents.POST_CREATE
         const publishDescription = isNew ? '发布了新文章' : '更新了文章'
-        const { title, category, id, summary, created } = payload as PostModel
+        const { title, category, id, summary } = payload as PostModel
+        const created = (payload as PostModel).createdAt ?? (payload as any).created
 
         if (type === BusinessEvents.POST_UPDATE) {
           // 只有创建90天内的文章更新才发送通知
@@ -208,7 +209,7 @@ export async function handleMxSpaceEvent(
         const safeText = sanitizeChatText(text, 500)
 
         if (isMaster && !parent) {
-          const timeAgo = dayjs(refModel.created).fromNow()
+          const timeAgo = dayjs((refModel as any).createdAt ?? (refModel as any).created).fromNow()
           message = `💬 ${safeAuthor} 在「${safeTitle}」发表之后的 ${timeAgo}又说：\n\n${safeText}`
         } else {
           message = `💬 ${safeAuthor} 在「${safeTitle}」发表了评论：\n\n${safeText}`
