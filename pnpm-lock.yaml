@@ -45,8 +45,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2
       remove-markdown:
-        specifier: ^0.6.4
-        version: 0.6.4
+        specifier: ^0.7.0
+        version: 0.7.0
       sanitize-html:
         specifier: ^2.17.7
         version: 2.17.7
@@ -632,10 +632,6 @@ packages:
     resolution: {integrity: sha512-MjYsKHO5O7mCsmRGxWcLWheFqN9DJ/2TmngvjKXihe6efViPqc274+Fx/4fYj/r03+ESvBdTXK0V6tA3rgez1g==}
     engines: {node: '>= 0.4'}
 
-  js-yaml@4.1.1:
-    resolution: {integrity: sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA==}
-    hasBin: true
-
   js-yaml@4.3.2:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
@@ -794,8 +790,8 @@ packages:
   reggol@1.7.1:
     resolution: {integrity: sha512-0Vr1vRYDFnsA14BipkHRn3+4FxlZxQJ4VQG2pFE2obSrR68hTHVbbQzS3/ZAHNb6l/+ThaJrc5BPgrYDM3yNyg==}
 
-  remove-markdown@0.6.4:
-    resolution: {integrity: sha512-BompiLClzjfh46irZmzv+1Q61jZYlKN3iq/hzae9EOUwf7ctr/5wpD4qwgn/FWDAYE18RORO7z/yr+HXZJCY8Q==}
+  remove-markdown@0.7.0:
+    resolution: {integrity: sha512-ZMYw/4jLXcO+pZTB8eAjGt48mhAF17yzfkiW4q0tDVLqcsqm39EGSs1XAJLk0i932KfCYc5ixNysn1EsSnMIAw==}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -810,9 +806,6 @@ packages:
   sanitize-html@2.17.7:
     resolution: {integrity: sha512-PGtEkc9cbnedU3s9TmzDbpsZ8w086g/0Q8k8/oIO1NLNU3i5k9yn835CrjJSajp1KMmkisbO1qPXxNKO3welAg==}
     engines: {node: '>=22.12.0'}
-
-  schemastery@3.17.2:
-    resolution: {integrity: sha512-hKOOlPLRM4/4jbWzc3Hv9wKOy0aYv5G09Bj9+eZ6mLSCrPTfPs5q/6EMiQAKwfOOYqq4Eq86+cMLj6I2q6jhgA==}
 
   schemastery@3.18.0:
     resolution: {integrity: sha512-Jw2uxjoyyqc/yeurmChUEc/jbi8GsrdXV/KmqRUDZXJAXAmrJiPsz8vKa17l/VckyzljHZ9oGaul443CQiXxtA==}
@@ -918,18 +911,6 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.19.0:
-    resolution: {integrity: sha512-blAT2mjOEIi0ZzruJfIhb3nps74PRWTCz1IjglWEEpQl5XS/UNama6u2/rjFkDDouqr4L67ry+1aGIALViWjDg==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.21.3:
     resolution: {integrity: sha512-201TZ/kPWxoPr/OKWjquZR1SWKXcvxdH+e1xrx89b3YbmzLMFCLfnaG1HFIgWzJOEWZ7MvpK++odZufgYR50Rw==}
     engines: {node: '>=10.0.0'}
@@ -964,7 +945,7 @@ snapshots:
       '@cordisjs/core': 3.18.1
       cosmokit: 1.8.1
       dotenv: 16.6.1
-      js-yaml: 4.1.1
+      js-yaml: 4.3.2
 
   '@cordisjs/logger@0.3.3(@cordisjs/core@3.18.1)':
     dependencies:
@@ -978,7 +959,7 @@ snapshots:
       cosmokit: 1.8.1
       file-type: 16.5.4
       mime-db: 1.54.0
-      ws: 8.19.0
+      ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -1019,7 +1000,7 @@ snapshots:
     dependencies:
       '@cordisjs/core': 3.18.1
       cosmokit: 1.8.1
-      schemastery: 3.17.2
+      schemastery: 3.18.0
 
   '@cordisjs/timer@0.3.2(@cordisjs/core@3.18.1)':
     dependencies:
@@ -1613,10 +1594,6 @@ snapshots:
       has-tostringtag: 1.0.2
       hasown: 2.0.4
 
-  js-yaml@4.1.1:
-    dependencies:
-      argparse: 2.0.1
-
   js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
@@ -1792,7 +1769,7 @@ snapshots:
       object-inspect: 1.13.4
       supports-color: 8.1.1
 
-  remove-markdown@0.6.4: {}
+  remove-markdown@0.7.0: {}
 
   safe-buffer@5.2.1: {}
 
@@ -1813,10 +1790,6 @@ snapshots:
       launder: 1.7.1
       parse-srcset: 1.0.2
       postcss: 8.5.26
-
-  schemastery@3.17.2:
-    dependencies:
-      cosmokit: 1.8.1
 
   schemastery@3.18.0:
     dependencies:
@@ -1930,8 +1903,6 @@ snapshots:
   vary@1.1.2: {}
 
   wrappy@1.0.2: {}
-
-  ws@8.19.0: {}
 
   ws@8.21.3: {}
 
