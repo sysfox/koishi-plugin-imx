@@ -91,7 +91,7 @@ export async function handleMxSpaceEvent(
           return
         }
 
-        const simplePreview = getSimplePreview(text)
+        const simplePreview = getSimplePreview(text ?? '')
         const status = [mood ? `心情: ${mood}` : '', weather ? `天气: ${weather}` : '']
           .filter(Boolean)
           .join('\t')
@@ -144,7 +144,8 @@ export async function handleMxSpaceEvent(
       }
 
       case BusinessEvents.COMMENT_CREATE: {
-        const { author, text, refType, parent, id, isWhispers } = payload as CommentModel
+        const { author, text, refType, id, isWhispers } = payload as CommentModel
+        const parent = (payload as CommentModel & { parent?: unknown }).parent
         const siteTitle = aggregateData.seo.title
 
         if (isWhispers) {

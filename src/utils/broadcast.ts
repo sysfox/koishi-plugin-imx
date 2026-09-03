@@ -52,10 +52,11 @@ export async function broadcastToAllContacts(
         try {
           const friends = await bot.getFriendList()
           for (const friend of friends.data) {
-            if (excludeChannels.includes(friend.id)) continue
+            const friendId = friend.user?.id
+            if (!friendId || excludeChannels.includes(friendId)) continue
 
             try {
-              await bot.sendPrivateMessage(friend.id, message)
+              await bot.sendPrivateMessage(friendId, message)
               totalSent++
             } catch (error) {
               totalFailed++
