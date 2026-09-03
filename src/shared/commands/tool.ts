@@ -49,7 +49,7 @@ async function getIpInfo(ip: string): Promise<IpInfo | 'error'> {
         range: data.range
       } as IpInfo
     } else {
-      const { data } = await axios.get(`http://ip-api.com/json/${ip}`, { timeout: 5000 })
+      const { data } = await axios.get(`https://ip-api.com/json/${ip}`, { timeout: 5000 })
       return {
         cityName: data.city,
         countryName: data.country,
@@ -78,7 +78,8 @@ export function apply(ctx: Context, config: Config = {}) {
     .example('tools.md5 hello world')
     .action(({ session }, text) => {
       if (!text) return '请提供要计算哈希的文本'
-      
+      if (text.length > 4096) return '输入文本过长（最多 4096 字符）'
+
       const hash = createHash('md5').update(text).digest('hex')
       return `MD5: ${hash}`
     })
@@ -88,7 +89,8 @@ export function apply(ctx: Context, config: Config = {}) {
     .example('tools.sha256 hello world')
     .action(({ session }, text) => {
       if (!text) return '请提供要计算哈希的文本'
-      
+      if (text.length > 4096) return '输入文本过长（最多 4096 字符）'
+
       const hash = createHash('sha256').update(text).digest('hex')
       return `SHA256: ${hash}`
     })
@@ -155,14 +157,16 @@ export function apply(ctx: Context, config: Config = {}) {
       if (!action || !text) {
         return '用法: tools.base64 <encode|decode> <文本>'
       }
+      if (text.length > 4096) return '输入文本过长（最多 4096 字符）'
 
       try {
         if (action === 'encode') {
           const encoded = Buffer.from(text, 'utf8').toString('base64')
-          return `Base64 编码: ${encoded}`
+          return `Base64 编码: ${encoded.slice(0, 8192)}`
         } else if (action === 'decode') {
-          const decoded = Buffer.from(text, 'base64').toString('utf8')
-          return `Base64 解码: ${decoded}`
+          if (!/^[A-Za-z0-9+/=\s]+$/.test(text)) return '输入不是有效的 Base64 字符串'
+          const decoded = Buffer.from(text.replace(/\s/g, ''), 'base64').toString('utf8')
+          return `Base64 解码: ${decoded.slice(0, 4096)}`
         } else {
           return '操作类型必须是 encode 或 decode'
         }

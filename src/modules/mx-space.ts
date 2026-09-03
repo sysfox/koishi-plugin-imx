@@ -148,21 +148,31 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
 
       if (config.webhook?.secret && signature) {
         const crypto = await import('crypto')
-        const payload = JSON.stringify(body)
+        // 优先使用原始请求体计算 HMAC；Koishi/koa 的 body 解析器可能重排 JSON，
+        // 用 JSON.stringify 会导致合法签名验证失败。不可用时回退到序列化后的 body。
+        const rawBody: string | undefined = (koaCtx.request as any).rawBody
+        const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(body)
         let isValidSignature = false
+
+        const safeCompare = (a: string, b: string): boolean => {
+          const bufA = Buffer.from(a)
+          const bufB = Buffer.from(b)
+          if (bufA.length !== bufB.length) return false
+          return crypto.timingSafeEqual(bufA, bufB)
+        }
         
         if (signature.startsWith('sha256=') || headers['x-webhook-signature256']) {
           const hmac = crypto.createHmac('sha256', config.webhook.secret)
           hmac.update(payload)
-          const expectedSignature = signature.startsWith('sha256=') 
+          const expectedSignature = signature.startsWith('sha256=')
             ? 'sha256=' + hmac.digest('hex')
             : hmac.digest('hex')
-          isValidSignature = signature === expectedSignature
+          isValidSignature = safeCompare(signature, expectedSignature)
         } else if (headers['x-webhook-signature']) {
           const hmac = crypto.createHmac('sha1', config.webhook.secret)
           hmac.update(payload)
           const expectedSignature = hmac.digest('hex')
-          isValidSignature = signature === expectedSignature
+          isValidSignature = safeCompare(signature, expectedSignature)
         }
         
         if (!isValidSignature) {
@@ -270,8 +280,11 @@ function setupCommentReply(ctx: Context, config: Config, logger: any, globalStat
 }
 
 function setupGreeting(ctx: Context, config: Config, logger: any) {
-  const morningJob = new CronJob(
-    config.greeting!.morningTime || '0 0 6 * * *',
+  let morningJob: CronJob | null = null
+  let eveningJob: CronJob | null = null
+  try {
+    morningJob = new CronJob(
+      config.greeting!.morningTime || '0 0 6 * * *',
     async () => {
       try {
         const { hitokoto } = await fetchHitokoto()
@@ -301,7 +314,7 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
     'Asia/Shanghai',
   )
 
-  const eveningJob = new CronJob(
+  eveningJob = new CronJob(
     config.greeting!.eveningTime || '0 0 22 * * *',
     async () => {
       try {
@@ -336,9 +349,15 @@ function setupGreeting(ctx: Context, config: Config, logger: any) {
   eveningJob.start()
 
   ctx.on('dispose', () => {
-    morningJob.stop()
-    eveningJob.stop()
+    morningJob?.stop()
+    eveningJob?.stop()
   })
+  } catch (error) {
+    // Cron 表达式来自管理员配置，非法表达式不应导致插件崩溃
+    logger.error('问候定时任务配置无效，已跳过问候功能:', error)
+    morningJob?.stop()
+    eveningJob?.stop()
+  }
 }
 
 function setupCommands(ctx: Context, config: Config, logger: any) {
@@ -418,7 +437,8 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
     .subcommand('.posts [page:number]', '获取最新的文章列表')
     .action(async ({ session }, page = 1) => {
       try {
-        const data = await apiClient.post.getList(page, 10)
+        const safePage = clampPage(page)
+        const data = await apiClient.post.getList(safePage, 10)
         if (!data.data.length) {
           return '没有找到文章'
         }
@@ -444,7 +464,8 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
     .subcommand('.notes [page:number]', '获取最新的日记列表')
     .action(async ({ session }, page = 1) => {
       try {
-        const data = await apiClient.note.getList(page, 10)
+        const safePage = clampPage(page)
+        const data = await apiClient.note.getList(safePage, 10)
         if (!data.data.length) {
           return '没有找到日记'
         }
@@ -472,12 +493,13 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
       if (!['post', 'note'].includes(type)) {
         return '类型必须是 post 或 note'
       }
+      const safeOffset = clampPage(offset)
 
       try {
         const replyPrefix = config.commands?.replyPrefix || '来自 Mix Space 的'
         
         if (type === 'post') {
-          const data = await apiClient.post.getList(offset, 1)
+          const data = await apiClient.post.getList(safeOffset, 1)
           if (!data.data.length) {
             return '没有找到文章'
           }
@@ -495,7 +517,7 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
             `${preview}${preview.length >= 200 ? '...' : ''}\n\n` +
             `🔗 [阅读全文](${url})`
         } else {
-          const data = await apiClient.note.getList(offset, 1)
+          const data = await apiClient.note.getList(safeOffset, 1)
           if (!data.data.length) {
             return '没有找到日记'
           }
@@ -518,4 +540,14 @@ function setupCommands(ctx: Context, config: Config, logger: any) {
         return '获取详情失败'
       }
     })
+}
+
+/**
+ * 用户输入的页码直接透传给后端 API，非法值（0/负数/NaN/超大值）
+ * 可能触发非预期查询。将页码钳制到合理范围。
+ */
+function clampPage(value: unknown, min = 1, max = 100): number {
+  const n = typeof value === 'number' ? Math.floor(value) : Number(value)
+  if (!Number.isFinite(n)) return min
+  return Math.min(max, Math.max(min, n))
 }

@@ -101,10 +101,18 @@ export async function handleMxSpaceEvent(
           status ? `\n${status}\n\n` : '\n'
         }${simplePreview}\n\n🔗 前往阅读：${url}`
 
-        // 如果有图片，发送图片消息
+        // 图片 URL 来自 webhook 负载（外部输入），仅允许 http(s)，
+        // 防止 bot 被诱导发送 file://、内网 URL 等危险资源。
         if (Array.isArray(images) && images.length > 0) {
-          const imageMessages = images.map(img => h.image(img.src))
-          await sendToChannels([h.text(message), ...imageMessages])
+          const imageMessages = images
+            .filter(img => img && isSafeHttpUrl(img.src))
+            .slice(0, 4)
+            .map(img => h.image(img.src))
+          if (imageMessages.length > 0) {
+            await sendToChannels([h.text(message), ...imageMessages])
+          } else {
+            await sendToChannels(message)
+          }
         } else {
           await sendToChannels(message)
         }
@@ -119,12 +127,16 @@ export async function handleMxSpaceEvent(
         }
 
         let message = `🔗 有新的友链申请！\n\n` +
-          `📝 名称: ${name}\n` +
-          `🌐 链接: ${url}\n` +
-          `📄 描述: ${description}`
+          `📝 名称: ${sanitizeChatText(name, 50)}\n` +
+          `🌐 链接: ${sanitizeChatText(url, 200)}\n` +
+          `📄 描述: ${sanitizeChatText(description, 200)}`
 
         if (avatar) {
-          await sendToChannels([h.image(avatar), h.text(message)])
+          if (isSafeHttpUrl(avatar)) {
+            await sendToChannels([h.image(avatar), h.text(message)])
+          } else {
+            await sendToChannels(message)
+          }
         } else {
           await sendToChannels(message)
         }
@@ -188,11 +200,17 @@ export async function handleMxSpaceEvent(
         const isMaster = author === owner.name || author === owner.username
         let message: string
 
+        // author / title / text 均来自 webhook 外部输入，截断并去除控制字符，
+        // 防止超长消息刷屏与伪造系统通知。
+        const safeAuthor = sanitizeChatText(author, 50)
+        const safeTitle = sanitizeChatText(refModel.title, 100)
+        const safeText = sanitizeChatText(text, 500)
+
         if (isMaster && !parent) {
           const timeAgo = dayjs(refModel.created).fromNow()
-          message = `💬 ${author} 在「${refModel.title}」发表之后的 ${timeAgo}又说：\n\n${text}`
+          message = `💬 ${safeAuthor} 在「${safeTitle}」发表之后的 ${timeAgo}又说：\n\n${safeText}`
         } else {
-          message = `💬 ${author} 在「${refModel.title}」发表了评论：\n\n${text}`
+          message = `💬 ${safeAuthor} 在「${safeTitle}」发表了评论：\n\n${safeText}`
         }
 
         await sendToChannels(message)
@@ -230,4 +248,27 @@ function getSimplePreview(text: string): string {
     .substring(0, 200)
   
   return preview + (preview.length >= 200 ? '...' : '')
+}
+
+/**
+ * 仅允许 http(s) 公网 URL，避免 file://、内网地址等危险资源。
+ */
+function isSafeHttpUrl(value: unknown): boolean {
+  if (typeof value !== 'string') return false
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 清理聊天回显文本：去控制字符并截断，防止超长刷屏与通知伪造。
+ */
+function sanitizeChatText(value: unknown, maxLength: number): string {
+  if (typeof value !== 'string') return ''
+  // eslint-disable-next-line no-control-regex
+  const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, '')
+  return cleaned.length > maxLength ? cleaned.slice(0, maxLength) + '...' : cleaned
 }

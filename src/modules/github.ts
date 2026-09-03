@@ -1,5 +1,5 @@
 import { Context, Schema } from 'koishi'
-import { createHmac } from 'crypto'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { truncateText } from '../utils/helper'
 import { sendMessage } from '../utils/broadcast'
 import type { PushEvent } from '../types/github/push'
@@ -73,13 +73,19 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
         return
       }
 
-      if (config.webhook?.secret && signature) {
+      if (config.webhook?.secret) {
+        if (!signature) {
+          logger.warn('GitHub Webhook 缺少签名（已配置 secret，拒绝未签名请求）')
+          koaCtx.status = 401
+          koaCtx.body = { error: 'Missing signature' }
+          return
+        }
         const payload = JSON.stringify(body)
         const hmac = createHmac('sha256', config.webhook.secret)
         hmac.update(payload)
         const expectedSignature = 'sha256=' + hmac.digest('hex')
-        
-        if (signature !== expectedSignature) {
+
+        if (!safeCompare(signature, expectedSignature)) {
           logger.warn('GitHub Webhook 签名验证失败')
           koaCtx.status = 401
           koaCtx.body = { error: 'Invalid signature' }
@@ -223,6 +229,16 @@ function formatPullRequestEvent(payload: PullRequestPayload): string {
   message += `🌿 ${pr.head.ref} → ${pr.base.ref}\n`
   message += `📊 状态: ${pr.state}\n`
   message += `🔗 链接: ${pr.html_url}`
-  
+
   return message
+}
+
+/**
+ * 常量时间签名比较，防止时序攻击。
+ */
+function safeCompare(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
 }
