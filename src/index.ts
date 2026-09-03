@@ -150,7 +150,7 @@ export const Config: Schema<Config> = Schema.object({
     broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
     excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
     excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
-    userAgent: Schema.string().description('User-Agent').default('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
+    userAgent: Schema.string().description('User-Agent（Bilibili 直播 API 请求头，未配置时使用内置默认 UA）').default('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
   }).description('Bilibili 配置'),
   
   github: Schema.object({

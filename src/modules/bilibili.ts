@@ -1,9 +1,11 @@
 import { Context, Schema, h } from 'koishi'
 import axios from 'axios'
-import { truncateText } from '../utils/helper'
-import { relativeTimeFromNow } from '../utils/time'
 import { axiosRequestWithLog, simplifyAxiosError } from '../utils/axios-error'
 import { sendMessage } from '../utils/broadcast'
+
+const BILIBILI_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+const BILIBILI_TIMEOUT = 10_000
+const LIVE_STATUS_CACHE_MAX = 500
 
 export const name = 'bilibili'
 
@@ -18,7 +20,7 @@ export interface Config {
   broadcastToAll?: boolean
   excludeChannels?: string[]
   excludePlatforms?: string[]
-  /** 保留字段：顶层透传的 UA，当前监控请求未使用 */
+  /** 请求 Bilibili 直播 API 时使用的 UA，未配置时使用内置默认 UA */
   userAgent?: string
 }
 
@@ -36,6 +38,14 @@ export const Config: Schema<Config> = Schema.object({
 
 const liveStatusCache = new Map<number, boolean>()
 
+/** 带上限的开播状态缓存写入：超过上限时删除最旧条目 */
+function setLiveStatusCache(roomId: number, isLive: boolean): void {
+  if (!liveStatusCache.has(roomId) && liveStatusCache.size >= LIVE_STATUS_CACHE_MAX) {
+    const oldest = liveStatusCache.keys().next()
+    if (!oldest.done) liveStatusCache.delete(oldest.value)
+  }
+  liveStatusCache.set(roomId, isLive)
+}
 /** 将 roomIds/roomId（number|string|数组）归一化为 number[]，过滤非法值并去重 */
 export function normalizeRoomIds(input: { roomIds?: (number | string)[]; roomId?: string | number }): number[] {
   const out: number[] = []
@@ -65,10 +75,15 @@ export function apply(ctx: Context, config: Config) {
   }
 
   const normalizedConfig: Config & { roomIds: (number | string)[] } = { ...config, roomIds }
+  const userAgent = config.userAgent || BILIBILI_UA
 
-  const interval = setInterval(async () => {
-    await checkLiveStatus(ctx, { ...normalizedConfig, roomIds }, logger)
+  const runCheck = () => checkLiveStatus(ctx, { ...normalizedConfig, roomIds }, logger)
+  const interval = setInterval(() => {
+    void runCheck()
   }, (config.checkInterval ?? 5) * 60 * 1000)
+
+  // 启动后立即检查一次，不等待首个 interval
+  void runCheck()
 
   ctx.on('dispose', () => {
     clearInterval(interval)
@@ -80,22 +95,21 @@ export function apply(ctx: Context, config: Config) {
         return '未配置监控房间'
       }
 
-      const statusList = []
-      for (const roomId of roomIds) {
-        const isLive = await axiosRequestWithLog(
-          logger,
-          () => getRoomLiveStatus(roomId),
-          `获取房间 ${roomId} 状态`
-        )
-        
-        if (isLive !== null) {
-          statusList.push(`房间 ${roomId}: ${isLive ? '🔴 直播中' : '⚫ 未直播'}`)
-        } else {
-          statusList.push(`房间 ${roomId}: ❌ 获取失败`)
-        }
-      }
+      const results = await Promise.allSettled(
+        roomIds.map((roomId) =>
+          axiosRequestWithLog(logger, () => getRoomLiveStatus(roomId, userAgent), `获取房间 ${roomId} 状态`),
+        ),
+      )
 
-      return statusList.join('\n')
+      return results
+        .map((result, index) => {
+          const roomId = roomIds[index]
+          if (result.status === 'fulfilled' && result.value !== null) {
+            return `房间 ${roomId}: ${result.value ? '🔴 直播中' : '⚫ 未直播'}`
+          }
+          return `房间 ${roomId}: ❌ 获取失败`
+        })
+        .join('\n')
     })
 
   logger.info(`Bilibili 模块已启动，监控 ${roomIds.length} 个房间`)
@@ -103,26 +117,29 @@ export function apply(ctx: Context, config: Config) {
 
 async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
   const roomIds = normalizeRoomIds(config)
-  for (const roomId of roomIds) {
+  if (!roomIds.length) return
+  const userAgent = config.userAgent || BILIBILI_UA
+
+  const checkOne = async (roomId: number): Promise<void> => {
     const isLive = await axiosRequestWithLog(
       logger,
-      () => getRoomLiveStatus(roomId),
+      () => getRoomLiveStatus(roomId, userAgent),
       `检查房间 ${roomId} 直播状态`
     )
-    
+
     if (isLive === null) {
-      continue
+      return
     }
-    
+
     const wasLive = liveStatusCache.get(roomId) || false
 
     if (isLive && !wasLive) {
       const roomInfo = await axiosRequestWithLog(
         logger,
-        () => getRoomInfo(roomId),
+        () => getRoomInfo(roomId, userAgent),
         `获取房间 ${roomId} 信息`
       )
-      
+
       if (roomInfo) {
         const message = formatLiveMessage(roomInfo)
         await sendMessage(ctx, message, {
@@ -134,25 +151,40 @@ async function checkLiveStatus(ctx: Context, config: Config, logger: any) {
       }
     }
 
-    liveStatusCache.set(roomId, isLive)
+    setLiveStatusCache(roomId, isLive)
   }
+
+  await Promise.allSettled(roomIds.map((roomId) => checkOne(roomId)))
 }
 
-async function getRoomLiveStatus(roomId: number): Promise<boolean> {
-  const response = await axios.get(`https://api.live.bilibili.com/room/v1/Room/get_info?room_id=${roomId}`)
-  return response.data.data.live_status === 1
+async function getRoomLiveStatus(roomId: number, userAgent: string = BILIBILI_UA): Promise<boolean> {
+  const response = await axios.get(`https://api.live.bilibili.com/room/v1/Room/get_info?room_id=${roomId}`, {
+    timeout: BILIBILI_TIMEOUT,
+    headers: { 'User-Agent': userAgent },
+  })
+  return response.data?.data?.live_status === 1
 }
 
-async function getRoomInfo(roomId: number) {
-  const response = await axios.get(`https://api.live.bilibili.com/room/v1/Room/get_info?room_id=${roomId}`)
-  return response.data.data
+async function getRoomInfo(roomId: number, userAgent: string = BILIBILI_UA) {
+  const response = await axios.get(`https://api.live.bilibili.com/room/v1/Room/get_info?room_id=${roomId}`, {
+    timeout: BILIBILI_TIMEOUT,
+    headers: { 'User-Agent': userAgent },
+  })
+  return response.data?.data
 }
 
 function formatLiveMessage(roomInfo: any): string {
+  if (!roomInfo || typeof roomInfo !== 'object') {
+    return '🔴 主播开播了！（房间信息获取异常）'
+  }
+  const uname = roomInfo.uname ?? '未知主播'
+  const title = roomInfo.title ?? '（无标题）'
+  const online = roomInfo.online ?? '未知'
+  const roomId = roomInfo.room_id ?? ''
   return [
-    `🔴 ${roomInfo.uname} 开播了！`,
-    `📺 ${roomInfo.title}`,
-    `👥 观看人数: ${roomInfo.online}`,
-    `🔗 https://live.bilibili.com/${roomInfo.room_id}`,
+    `🔴 ${uname} 开播了！`,
+    `📺 ${title}`,
+    `👥 观看人数: ${online}`,
+    `🔗 https://live.bilibili.com/${roomId}`,
   ].join('\n')
 }

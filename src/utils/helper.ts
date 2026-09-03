@@ -2,6 +2,7 @@ import sanitizeHtml from 'sanitize-html'
 
 /**
  * 转义 Markdown 特殊字符
+ * @deprecated 当前代码库内无引用，保留仅为兼容外部调用，新代码请勿使用
  */
 export function escapeMarkdown(text: string): string {
   // Escape backslashes first, then markdown special characters for MarkdownV2
@@ -27,6 +28,7 @@ export function truncateText(text: string, maxLength: number = 200): string {
 
 /**
  * 清理 HTML 标签
+ * @deprecated 当前代码库内无引用，保留仅为兼容外部调用，新代码请勿使用
  */
 export function stripHtml(html: string): string {
   // Remove all HTML tags and attributes using sanitize-html
@@ -35,6 +37,7 @@ export function stripHtml(html: string): string {
 
 /**
  * 获取用户标识符
+ * @deprecated 当前代码库内无引用，保留仅为兼容外部调用，新代码请勿使用
  */
 export function getUserIdentifier(userId: string, username?: string, firstName?: string): string {
   if (username) {

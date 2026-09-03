@@ -3,8 +3,11 @@ import { createHash, randomBytes } from 'crypto'
 import axios from 'axios'
 import { isIPv4, isIPv6 } from 'net'
 import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
 import { fetchHitokoto } from '../../utils/hitokoto'
 import { randomColor } from '../../utils/helper'
+
+dayjs.extend(relativeTime)
 
 export const name = 'tool-commands'
 
@@ -100,9 +103,12 @@ export function apply(ctx: Context, config: Config = {}) {
     .example('tools.ip 8.8.8.8')
     .action(async ({ session }, ip) => {
       if (!ip) return '请提供要查询的 IP 地址'
+      const query = ip.trim()
+      if (!query) return '请提供要查询的 IP 地址'
 
       try {
-        const info = await getIpInfo(ip)
+        // 查询接口均为 https（IPv4: api.i-meto.com，IPv6: ip-api.com）；格式非法直接返回
+        const info = await getIpInfo(query)
         
         if (info === 'error') {
           return '无效的 IP 地址或查询失败'
@@ -127,9 +133,15 @@ export function apply(ctx: Context, config: Config = {}) {
     .example('tools.timestamp')
     .example('tools.timestamp 1640995200')
     .action(({ session }, timestamp) => {
-      if (timestamp) {
+      if (timestamp !== undefined && timestamp !== null) {
+        if (!Number.isFinite(timestamp) || Number.isNaN(timestamp)) {
+          return '无效的时间戳，请输入一个有效的数字（秒）'
+        }
         // 转换时间戳为可读时间
         const time = dayjs(timestamp * 1000)
+        if (!time.isValid()) {
+          return '无效的时间戳，转换失败'
+        }
         return [
           `⏰ 时间戳转换`,
           `时间戳: ${timestamp}`,
@@ -238,44 +250,39 @@ export function apply(ctx: Context, config: Config = {}) {
       }
     })
 
-  // 短链接生成
+  // 短链接生成（需自备短链接服务 API Key，当前未配置则直接提示，不发起请求）
   ctx.command('tools.shorturl <url:text>', '生成短链接')
     .example('tools.shorturl https://example.com')
     .action(async ({ session }, url) => {
       if (!url) return '请提供要缩短的 URL'
 
+      let parsed: URL
       try {
-        // 验证 URL 格式
-        new URL(url)
-        
-        // 使用简单的短链接服务（这里可以替换为其他服务）
-        const { data } = await axios.post('https://api.short.io/links', {
-          originalURL: url,
-          domain: 'short.io'
-        }, {
-          headers: {
-            'authorization': 'your-api-key', // 需要配置 API key
-            'content-type': 'application/json'
-          },
-          timeout: 5000
-        })
-        
-        return `🔗 短链接: ${data.shortURL}`
-      } catch (error) {
-        // 如果短链接服务失败，返回原链接
-        return `❌ 生成短链接失败，原链接: ${url}`
+        // 仅支持 http/https，避免 javascript: 等危险协议
+        parsed = new URL(url.trim())
+      } catch {
+        return 'URL 格式无效，请输入以 http:// 或 https:// 开头的完整 URL'
       }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return '仅支持 http/https 链接'
+      }
+
+      // 短链接服务需要配置 API Key，当前未接入：直接友好提示，不发起请求
+      return `短链接服务未配置（缺少 API Key），暂不可用，原链接: ${parsed.toString()}`
     })
 
-  // 二维码生成
+  // 二维码生成（使用 https 在线服务，不做服务端可达性探测，由客户端加载）
   ctx.command('tools.qrcode <text:text>', '生成二维码')
     .example('tools.qrcode hello world')
     .action(async ({ session }, text) => {
       if (!text) return '请提供要生成二维码的内容'
+      const content = text.trim()
+      if (!content) return '请提供要生成二维码的内容'
+      if (content.length > 2048) return '内容过长（最多 2048 字符），无法生成二维码'
 
       try {
-        // 使用在线二维码生成服务
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`
+        // 使用在线二维码生成服务（https）
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(content)}`
         
         return [
           h.text('📱 二维码已生成:'),
