@@ -44,17 +44,25 @@ export interface Config {
     }
   }
   
-  // Bilibili 配置
+  // Bilibili 配置（同时接受新旧字段：顶层 roomIds/roomId 与旧 liveRoom.roomId/liveRoom.roomIds）
   bilibili?: {
     enabled?: boolean
+    roomId?: string | number
+    roomIds?: (number | string)[]
     liveRoom?: {
-      roomId?: string
+      roomId?: string | number
+      roomIds?: (number | string)[]
       watchChannels?: string[]
       checkInterval?: number
       broadcastToAll?: boolean
       excludeChannels?: string[]
       excludePlatforms?: string[]
     }
+    watchChannels?: string[]
+    checkInterval?: number
+    broadcastToAll?: boolean
+    excludeChannels?: string[]
+    excludePlatforms?: string[]
     userAgent?: string
   }
   
@@ -81,6 +89,7 @@ export interface Config {
       enabled?: boolean
       threshold?: number
       chance?: number
+      breakThreshold?: number
     }
     tools?: {
       enabled?: boolean
@@ -125,14 +134,22 @@ export const Config: Schema<Config> = Schema.object({
   
   bilibili: Schema.object({
     enabled: Schema.boolean().description('启用 Bilibili 功能').default(false),
+    roomId: Schema.union([Schema.string(), Schema.number()]).description('兼容旧配置：单个直播间ID'),
+    roomIds: Schema.array(Schema.union([Schema.number(), Schema.string()])).description('监控的直播间ID列表').default([]),
     liveRoom: Schema.object({
-      roomId: Schema.string().description('B站直播间房间号'),
+      roomId: Schema.union([Schema.string(), Schema.number()]).description('兼容旧配置：直播间房间号（单个）'),
+      roomIds: Schema.array(Schema.union([Schema.number(), Schema.string()])).description('兼容字段：直播间ID列表').default([]),
       watchChannels: Schema.array(Schema.string()).description('监听的频道ID列表').default([]),
       checkInterval: Schema.number().description('检查间隔（分钟）').default(1).min(1).max(10),
       broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
       excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
       excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
-    }).description('直播间监控配置'),
+    }).description('直播间监控配置（兼容旧字段）'),
+    watchChannels: Schema.array(Schema.string()).description('推送通知的频道ID列表').default([]),
+    checkInterval: Schema.number().description('检查间隔（分钟）').default(5).min(1).max(60),
+    broadcastToAll: Schema.boolean().description('是否广播到所有联系人').default(false),
+    excludeChannels: Schema.array(Schema.string()).description('排除的频道ID列表（当启用广播到所有联系人时）').default([]),
+    excludePlatforms: Schema.array(Schema.string()).description('排除的平台列表（如：telegram, discord, qq等）').default(['telegram']),
     userAgent: Schema.string().description('User-Agent').default('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'),
   }).description('Bilibili 配置'),
   
@@ -157,6 +174,7 @@ export const Config: Schema<Config> = Schema.object({
       enabled: Schema.boolean().description('启用复读机').default(false),
       threshold: Schema.number().description('触发复读的次数').default(3).min(2).max(10),
       chance: Schema.number().description('复读概率 (0-1)').default(0.5).min(0).max(1),
+      breakThreshold: Schema.number().description('连续复读多少次后打断').default(12).min(5).max(20),
     }).description('复读机配置'),
     tools: Schema.object({
       enabled: Schema.boolean().description('启用工具命令').default(true),
@@ -164,9 +182,39 @@ export const Config: Schema<Config> = Schema.object({
   }).description('共享功能配置'),
 })
 
+export function normalizeBilibiliConfig(raw: NonNullable<Config['bilibili']>): bilibili.Config {
+  const toNumbers = (values: (number | string | undefined | null)[]): number[] => {
+    const out: number[] = []
+    for (const v of values) {
+      if (v === undefined || v === null || v === '') continue
+      const n = typeof v === 'number' ? v : Number(v)
+      if (Number.isFinite(n) && n > 0) out.push(Math.floor(n))
+    }
+    return [...new Set(out)]
+  }
+
+  const roomIds = toNumbers([
+    ...(Array.isArray(raw.roomIds) ? raw.roomIds : []),
+    ...(Array.isArray(raw.liveRoom?.roomIds) ? raw.liveRoom.roomIds : []),
+    raw.roomId,
+    raw.liveRoom?.roomId,
+  ])
+
+  return {
+    enabled: raw.enabled,
+    roomIds,
+    watchChannels: raw.watchChannels ?? raw.liveRoom?.watchChannels ?? [],
+    checkInterval: raw.checkInterval ?? raw.liveRoom?.checkInterval ?? 5,
+    broadcastToAll: raw.broadcastToAll ?? raw.liveRoom?.broadcastToAll ?? false,
+    excludeChannels: raw.excludeChannels ?? raw.liveRoom?.excludeChannels ?? [],
+    excludePlatforms: raw.excludePlatforms ?? raw.liveRoom?.excludePlatforms ?? ['telegram'],
+    userAgent: raw.userAgent,
+  }
+}
+
 export function apply(ctx: Context, config: Config) {
   const logger = ctx.logger('imx')
-  
+
   if (config.mxSpace?.baseUrl) {
     try {
       ctx.plugin(mxSpace, config.mxSpace)
@@ -177,7 +225,7 @@ export function apply(ctx: Context, config: Config) {
   
   if (config.bilibili?.enabled) {
     try {
-      ctx.plugin(bilibili, config.bilibili)
+      ctx.plugin(bilibili, normalizeBilibiliConfig(config.bilibili))
     } catch (error) {
       logger.error('Bilibili 模块加载错误:', error)
     }

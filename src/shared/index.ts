@@ -13,6 +13,7 @@ export interface Config {
     enabled?: boolean
     threshold?: number
     chance?: number
+    breakThreshold?: number
   }
   tools?: {
     enabled?: boolean
@@ -28,6 +29,7 @@ export const Config: Schema<Config> = Schema.object({
     enabled: Schema.boolean().description('启用复读机').default(false),
     threshold: Schema.number().description('触发复读的次数').default(3).min(2).max(10),
     chance: Schema.number().description('复读概率 (0-1)').default(0.5).min(0).max(1),
+    breakThreshold: Schema.number().description('连续复读多少次后打断').default(12).min(5).max(20),
   }).description('复读机配置'),
   tools: Schema.object({
     enabled: Schema.boolean().description('启用工具命令').default(true),

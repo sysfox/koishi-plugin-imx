@@ -22,9 +22,9 @@ export function apply(ctx: Context, config: Config = {}) {
   if (!config.enabled) return
 
   const logger = ctx.logger('repeater')
-  const repeatCount = config.threshold || 3
-  const breakRepeatCount = config.breakThreshold || 12
-  const repeatChance = config.chance || 0.5
+  const repeatCount = config.threshold ?? 3
+  const breakRepeatCount = config.breakThreshold ?? 12
+  const repeatChance = config.chance ?? 0.5
 
   ctx.middleware((session: Session, next: Next) => {
     const sessionId = `${session.platform}:${session.channelId}`
@@ -34,7 +34,7 @@ export function apply(ctx: Context, config: Config = {}) {
       return next()
     }
 
-    const result = checkRepeater(sessionId, message)
+    const result = checkRepeater(sessionId, message, repeatCount, breakRepeatCount)
     
     if (result === true) {
       if (Math.random() < repeatChance) {
@@ -57,7 +57,7 @@ export function apply(ctx: Context, config: Config = {}) {
   })
 }
 
-function checkRepeater(sessionId: string, message: string): boolean | 'break' {
+function checkRepeater(sessionId: string, message: string, repeatCount: number, breakRepeatCount: number): boolean | 'break' {
   if (sessionToMessageQueue.has(sessionId)) {
     const messageQueue = sessionToMessageQueue.get(sessionId)!
     const latestMessage = messageQueue[messageQueue.length - 1]
@@ -68,9 +68,6 @@ function checkRepeater(sessionId: string, message: string): boolean | 'break' {
       messageQueue.length = 0
       messageQueue.push(message)
     }
-
-    const repeatCount = 3
-    const breakRepeatCount = 12
 
     if (messageQueue.length === repeatCount) {
       messageQueue.length = repeatCount + 1
