@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  ws: '>=8.21.0'
+  js-yaml: '>=4.3.1'
+
 importers:
 
   .:

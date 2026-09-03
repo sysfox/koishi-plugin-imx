@@ -42,7 +42,7 @@ jobs:
         run: pnpm run build
         
       - name: Run tests
-        run: pnpm test --if-present
+        run: pnpm run --if-present test
         
       - name: Run security audit
         run: pnpm audit --audit-level=high
@@ -104,7 +104,7 @@ jobs:
         run: pnpm run build
         
       - name: Generate coverage report
-        run: pnpm run coverage --if-present || echo "Coverage script not available"
+        run: pnpm run --if-present coverage || echo "Coverage script not available"
         
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
