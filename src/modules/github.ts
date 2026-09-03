@@ -80,7 +80,10 @@ function setupWebhook(ctx: Context, config: Config, logger: any) {
           koaCtx.body = { error: 'Missing signature' }
           return
         }
-        const payload = JSON.stringify(body)
+        // 优先使用原始请求体计算 HMAC；Koishi/koa 的 body 解析器可能重排 JSON，
+        // 用 JSON.stringify 会导致合法签名验证失败。不可用时回退到序列化后的 body。
+        const rawBody: string | undefined = (koaCtx.request as any).rawBody
+        const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(body)
         const hmac = createHmac('sha256', config.webhook.secret)
         hmac.update(payload)
         const expectedSignature = 'sha256=' + hmac.digest('hex')

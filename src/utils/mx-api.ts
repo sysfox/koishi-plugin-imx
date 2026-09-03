@@ -1,9 +1,9 @@
 import { allControllers, createClient } from '@mx-space/api-client'
-import { axiosAdaptor } from '@mx-space/api-client/dist/adaptors/axios'
-import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import axios from 'axios'
 import { Context } from 'koishi'
 import { mxSpaceUserAgent } from '../constants'
-import { logSimplifiedError } from './axios-error'
+import { assertSafeUrl, AXIOS_DEFAULT_TIMEOUT, logSimplifiedError } from './axios-error'
 
 export interface Config {
   baseUrl?: string
@@ -12,30 +12,83 @@ export interface Config {
   watchGroupIds?: string[]
 }
 
-let apiClientInstance: any
+// 按 baseUrl + token 做 keyed 单例：token 变更时能拿到携带新 token 的 client，
+// 且不同配置之间不会互相污染。
+const apiClientCache = new Map<string, any>()
+
+/**
+ * 规范化 Authorization 头：无 Bearer 前缀则补上，已有则不重复添加。
+ */
+export function normalizeAuthorization(token?: string): string | undefined {
+  if (!token) return undefined
+  const trimmed = token.trim()
+  if (!trimmed) return undefined
+  if (/^bearer\s+/i.test(trimmed)) {
+    return trimmed.replace(/^bearer\s+/i, 'Bearer ')
+  }
+  return `Bearer ${trimmed}`
+}
+
+/**
+ * 为指定的 axios 实例构造与 axiosAdaptor 同形的 adaptor，
+ * 使拦截器只挂在该实例上，不污染全局默认实例。
+ */
+function buildInstanceAdaptor(instance: AxiosInstance) {
+  return {
+    get default() {
+      return instance
+    },
+    responseWrapper: {},
+    get(url: string, options?: any) {
+      return instance.get(url, options)
+    },
+    post(url: string, options?: any) {
+      const { data, ...config } = options || {}
+      return instance.post(url, data, config)
+    },
+    put(url: string, options?: any) {
+      const { data, ...config } = options || {}
+      return instance.put(url, data, config)
+    },
+    delete(url: string, options?: any) {
+      const { ...config } = options || {}
+      return instance.delete(url, config)
+    },
+    patch(url: string, options?: any) {
+      const { data, ...config } = options || {}
+      return instance.patch(url, data, config)
+    },
+  }
+}
 
 export function getApiClient(ctx: Context, config: Config) {
-  if (apiClientInstance) {
-    return apiClientInstance
-  }
-  
   if (!config.baseUrl) {
     throw new Error('MX Space baseUrl is required')
   }
-  
+
+  assertSafeUrl(config.baseUrl, 'MX Space baseUrl')
+
+  const authorization = normalizeAuthorization(config.token)
+  const cacheKey = `${config.baseUrl}::${authorization ?? ''}`
+  const cached = apiClientCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   const logger = ctx.logger('mx-space-api')
 
-  axiosAdaptor.default.interceptors.request.use((req: InternalAxiosRequestConfig) => {
+  const instance = axios.create({ timeout: AXIOS_DEFAULT_TIMEOUT })
+  instance.interceptors.request.use((req: InternalAxiosRequestConfig) => {
     req.headers = {
       ...req.headers,
-      'Authorization': config.token,
+      ...(authorization ? { 'Authorization': authorization } : {}),
       'user-agent': mxSpaceUserAgent,
       'x-request-id': Math.random().toString(36).slice(2),
     } as any
 
     return req
   })
-  axiosAdaptor.default.interceptors.response.use(
+  instance.interceptors.response.use(
     (res: AxiosResponse) => {
       return res
     },
@@ -51,23 +104,27 @@ export function getApiClient(ctx: Context, config: Config) {
       return Promise.reject(err)
     },
   )
-  const apiClient = createClient(axiosAdaptor)(config.baseUrl, {
+  const apiClient = createClient(buildInstanceAdaptor(instance))(config.baseUrl, {
     controllers: allControllers,
   })
-  apiClientInstance = apiClient
+  apiClientCache.set(cacheKey, apiClient)
   return apiClient
 }
 
 let aggregateDataCache: any
+let aggregateDataCacheKey: string | undefined
 let cacheTime: number
 export async function getMxSpaceAggregateData(ctx: Context, config: Config) {
   const now = Date.now()
-  if (aggregateDataCache && cacheTime && now - cacheTime < 1000 * 60 * 5) {
+  const authorization = normalizeAuthorization(config.token)
+  const cacheKey = `${config.baseUrl}::${authorization ?? ''}`
+  if (aggregateDataCache && aggregateDataCacheKey === cacheKey && cacheTime && now - cacheTime < 1000 * 60 * 5) {
     return aggregateDataCache
   }
   const apiClient = getApiClient(ctx, config)
   const data = await apiClient.aggregate.getAggregateData()
   aggregateDataCache = data
+  aggregateDataCacheKey = cacheKey
   cacheTime = now
   return data
 }
