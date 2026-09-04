@@ -101,7 +101,7 @@ jobs:
         run: pnpm run --if-present coverage || echo "Coverage script not available"
         
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           file: ./coverage/lcov.info
           flags: unittests
